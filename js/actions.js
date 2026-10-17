@@ -1,9 +1,8 @@
-// Importar, exportar y respaldar.
+// Exportar y respaldar.
 
 import { html } from '../vendor/preact-htm.js';
 import { ui, pickFile, saveFile, SheetHead } from './components.js';
 import { getState, markBackup, replaceAll, sanitize } from './store.js';
-import { parseBudgetWorkbook } from './xlsx-import.js';
 import { buildWorkbook } from './xlsx-export.js';
 import { todayISO } from './format.js';
 
@@ -16,18 +15,6 @@ export function MessageSheet({ title, message }) {
 }
 
 const fail = (title, e) => ui.open('message', { title, message: e?.message || 'Ocurrió un error inesperado.' });
-
-// Debe llamarse directo desde un toque (iOS solo abre el selector así).
-export async function importExcelFlow() {
-  const file = await pickFile(`.xlsx,${XLSX_TYPE}`);
-  if (!file) return;
-  try {
-    const result = parseBudgetWorkbook(new Uint8Array(await file.arrayBuffer()));
-    ui.open('import', { result, fileName: file.name });
-  } catch (e) {
-    fail('No pude leer el Excel', e);
-  }
-}
 
 export async function exportExcel() {
   try {

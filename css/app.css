@@ -366,3 +366,4 @@ input[type="file"] { display: none; }
 .welcome select { -webkit-appearance: none; appearance: none; }
 .select { border: 0; background: var(--field); border-radius: 10px; padding: 8px 12px; font-size: 16px; font-weight: 600; }
 .welcome .btn.secondary { background: var(--card); }
+.field label > span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }

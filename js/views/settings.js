@@ -1,7 +1,7 @@
 import { html } from '../../vendor/preact-htm.js';
 import { useStore, ui, Icon, isStandalone } from '../components.js';
 import { setPayday, resetAll, setCurrencyCode } from '../store.js';
-import { importExcelFlow, exportExcel, saveBackup, restoreBackup } from '../actions.js';
+import { exportExcel, saveBackup, restoreBackup } from '../actions.js';
 import { fmtDate, CURRENCIES } from '../format.js';
 import { VERSION } from '../version.js';
 
@@ -24,7 +24,6 @@ export function SettingsView() {
 
     <h2 class="subtitle">Tus datos</h2>
     <div class="card flush">
-      <${ActionRow} icon="file" title="Importar desde Excel" meta="Trae los meses de tu archivo .xlsx" onClick=${importExcelFlow} />
       <${ActionRow} icon="download" title="Exportar a Excel" meta="Todo en un archivo .xlsx" onClick=${exportExcel} />
       <${ActionRow} icon="share" title="Guardar respaldo" meta=${last ? `Último respaldo: ${fmtDate(last.slice(0, 10))}` : 'Aún no tienes un respaldo'} onClick=${saveBackup} />
       <${ActionRow} icon="upload" title="Restaurar respaldo" meta="Reemplaza tus datos con un respaldo .json" onClick=${restoreBackup} />

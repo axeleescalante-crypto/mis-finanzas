@@ -4,8 +4,8 @@
 import { html, useState } from '../../vendor/preact-htm.js';
 import { ui, Icon, Dot } from '../components.js';
 import { finishOnboarding, setOnboarded } from '../store.js';
-import { importExcelFlow } from '../actions.js';
-import { CURRENCIES, currentKey, parseAmount, MONTHS } from '../format.js';
+import { CURRENCIES, currentKey, parseAmount, MONTHS, fmt } from '../format.js';
+import { payBreakdown } from '../calc.js';
 
 const SLIDES = [
   {
@@ -52,14 +52,20 @@ function Slide({ s }) {
 
 function Setup({ onBack }) {
   const [currency, setCurrency] = useState('USD');
-  const [income, setIncome] = useState('');
+  const [base, setBase] = useState('');
+  const [ded, setDed] = useState('');
   const [payday, setPayday] = useState(30);
   const [err, setErr] = useState('');
 
+  const preview = payBreakdown(parseAmount(base) > 0 ? { base: parseAmount(base), ded: parseAmount(ded), dedMode: 'pct' } : null);
+
   const start = (template) => {
-    const n = income.trim() ? parseAmount(income) : null;
-    if (income.trim() && !(n > 0)) return setErr('Revisa el ingreso.');
-    finishOnboarding(currentKey(), { currency, payday, income: n, template });
+    const b = base.trim() ? parseAmount(base) : null;
+    if (base.trim() && !(b > 0)) return setErr('Revisa tu salario base.');
+    const d = ded.trim() ? parseAmount(ded) : null;
+    if (d != null && (d < 0 || d >= 100)) return setErr('Los descuentos van en porcentaje (de 0 a 99).');
+    const pay = b ? { base: b, extra: null, ded: d, dedMode: 'pct' } : null;
+    finishOnboarding(currentKey(), { currency, payday, pay, template });
     if (template) location.hash = `#/mes/${currentKey()}/presupuesto`;
   };
 
@@ -72,10 +78,17 @@ function Setup({ onBack }) {
         ${Object.entries(CURRENCIES).map(([code, c]) => html`<option key=${code} value=${code}>${c.label} (${code})</option>`)}
       </select>
     </label>
-    <label class="field">
-      <span>¿Cuánto ganas al mes? (opcional)</span>
-      <input inputmode="decimal" placeholder="0.00" value=${income} onInput=${(e) => setIncome(e.target.value)} />
-    </label>
+    <div class="field-row" style="margin:10px 0">
+      <label class="field">
+        <span>Salario base al mes</span>
+        <input inputmode="decimal" placeholder="Opcional" value=${base} onInput=${(e) => setBase(e.target.value)} />
+      </label>
+      <label class="field">
+        <span>Descuentos de ley (%)</span>
+        <input inputmode="decimal" placeholder="Ej. 15" value=${ded} onInput=${(e) => setDed(e.target.value)} />
+      </label>
+    </div>
+    ${preview && html`<p class="card-note" style="margin:-2px 4px 8px">Te llegarían unos <b>${fmt(preview.net)}</b> al mes. Si haces horas extra o recibes bonos, los agregas cada mes en tu ingreso.</p>`}
     <label class="field">
       <span>¿Qué día del mes te pagan?</span>
       <select value=${payday} onChange=${(e) => setPayday(+e.target.value)}>
@@ -87,7 +100,6 @@ function Setup({ onBack }) {
       <button class="btn primary" onClick=${() => start('plantilla')}>Usar plantilla sugerida</button>
       <p class="card-note" style="margin:-2px 4px 2px;text-align:center">Trae categorías comunes (alquiler, supermercado, transporte…) para que solo pongas los montos de ${MONTHS[new Date().getMonth()].toLowerCase()}.</p>
       <button class="btn secondary" onClick=${() => start('blanco')}>Empezar en blanco</button>
-      <button class="btn secondary" onClick=${() => { finishOnboarding(currentKey(), { currency, payday, income: null, template: null }); importExcelFlow(); }}>Importar mi Excel</button>
     </div>
     <button class="welcome-back" onClick=${onBack}>Atrás</button>
   </div>`;

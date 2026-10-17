@@ -1,11 +1,10 @@
-// Hojas modales: gasto, renglón del presupuesto, deuda, importar y confirmar.
+// Hojas modales: gasto, renglón del presupuesto, deuda y confirmar.
 
 import { html, useState } from '../../vendor/preact-htm.js';
-import { useStore, ui, SheetHead, go, Icon } from '../components.js';
-import { emptyMonth, norm, sectionOf, variableRows, debtsOverview, isMonthEmpty, summary } from '../calc.js';
-import { saveTx, deleteTx, saveItem, deleteItem, setDebtInfo, renameDebt, importMonths } from '../store.js';
-import { fmt, parseAmount, amountInput, todayISO, currentKey, monthLabel, monthName, daysInMonth } from '../format.js';
-import { keysFor } from '../xlsx-import.js';
+import { useStore, ui, SheetHead, Segmented } from '../components.js';
+import { emptyMonth, norm, sectionOf, debtsOverview, payBreakdown } from '../calc.js';
+import { saveTx, deleteTx, saveItem, deleteItem, setDebtInfo, renameDebt } from '../store.js';
+import { fmt, parseAmount, amountInput, todayISO, currentKey, monthLabel, monthName, daysInMonth, currencySymbol } from '../format.js';
 
 function defaultDate(key) {
   const cur = currentKey();
@@ -76,18 +75,33 @@ export function TxSheet({ monthKey, tx }) {
 export function ItemSheet({ monthKey, section, item }) {
   const sec = sectionOf(section);
   const isVar = section === 'variables';
+  const isIncome = section === 'ingresos';
   const editing = item && !item.extra;
+  const p = item?.pay;
   const [name, setName] = useState(item?.name || '');
   const [est, setEst] = useState(amountInput(item?.est));
   const [real, setReal] = useState(isVar ? '' : amountInput(item?.real));
+  const [mode, setMode] = useState(p ? 'variable' : 'fijo');
+  const [base, setBase] = useState(amountInput(p?.base));
+  const [extra, setExtra] = useState(amountInput(p?.extra));
+  const [ded, setDed] = useState(p?.ded != null ? String(p.ded) : '');
+  const [dedMode, setDedMode] = useState(p?.dedMode || 'pct');
   const [err, setErr] = useState('');
+
+  const usePay = isIncome && mode === 'variable';
+  const pay = usePay && parseAmount(base) > 0 ? { base: parseAmount(base), extra: parseAmount(extra), ded: parseAmount(ded), dedMode } : null;
+  const calc = payBreakdown(pay);
 
   const save = () => {
     if (!name.trim()) return setErr('Escribe un nombre.');
-    const e = est.trim() ? parseAmount(est) : null;
-    const r = !isVar && real.trim() ? parseAmount(real) : null;
-    if ((est.trim() && e == null) || (!isVar && real.trim() && r == null)) return setErr('Revisa las cantidades.');
-    saveItem(monthKey, section, { id: editing ? item.id : null, name, est: e, real: r });
+    if (usePay && !calc) return setErr('Escribe tu salario base.');
+    const e = usePay ? calc.estimate : est.trim() ? parseAmount(est) : null;
+    let r = !isVar && real.trim() ? parseAmount(real) : null;
+    if ((!usePay && est.trim() && e == null) || (!isVar && real.trim() && r == null)) return setErr('Revisa las cantidades.');
+    // Si ya estaba marcado con el neto anterior, se actualiza con las horas extra nuevas.
+    const oldNet = payBreakdown(p)?.net;
+    if (usePay && r != null && oldNet != null && Math.abs(r - oldNet) < 0.005) r = calc.net;
+    saveItem(monthKey, section, { id: editing ? item.id : null, name, est: e, real: r, pay: usePay ? pay : null });
     ui.close();
   };
   const remove = () => {
@@ -100,19 +114,53 @@ export function ItemSheet({ monthKey, section, item }) {
     <${SheetHead} title=${editing ? sec.label : `Agregar a ${sec.label.toLowerCase()}`} action=${save} />
     <label class="field">
       <span>Nombre</span>
-      <input placeholder=${isVar ? 'Ej. Gasolina' : section === 'ingresos' ? 'Ej. Salario' : section === 'deudas' ? 'Ej. Carro' : 'Ej. Alquiler'} value=${name} onInput=${(e) => setName(e.target.value)} />
+      <input placeholder=${isVar ? 'Ej. Gasolina' : isIncome ? 'Ej. Salario' : section === 'deudas' ? 'Ej. Carro' : 'Ej. Alquiler'} value=${name} onInput=${(e) => setName(e.target.value)} />
     </label>
-    <label class="field">
-      <span>Presupuesto (estimado)</span>
-      <input inputmode="decimal" placeholder="$0.00" value=${est} onInput=${(e) => setEst(e.target.value)} />
-    </label>
+    ${isIncome &&
+    html`<${Segmented} options=${[{ value: 'fijo', label: 'Monto fijo' }, { value: 'variable', label: 'Salario variable' }]} value=${mode} onChange=${setMode} label="Tipo de ingreso" />`}
+    ${usePay
+      ? html`
+        <div class="field-row" style="margin-top:10px">
+          <label class="field">
+            <span>Salario base</span>
+            <input inputmode="decimal" placeholder="0.00" value=${base} onInput=${(e) => setBase(e.target.value)} />
+          </label>
+          <label class="field">
+            <span>Horas extra y bonos</span>
+            <input inputmode="decimal" placeholder="Este mes" value=${extra} onInput=${(e) => setExtra(e.target.value)} />
+          </label>
+        </div>
+        <div class="field" style="display:flex;align-items:center;gap:10px">
+          <label style="flex:1"><span>Descuentos de ley</span>
+            <input inputmode="decimal" placeholder=${dedMode === 'pct' ? 'Ej. 15' : '0.00'} value=${ded} onInput=${(e) => setDed(e.target.value)} />
+          </label>
+          <div class="seg" style="margin:0;width:96px">
+            <button class=${dedMode === 'pct' ? 'on' : ''} onClick=${() => setDedMode('pct')}>%</button>
+            <button class=${dedMode === 'amt' ? 'on' : ''} onClick=${() => setDedMode('amt')}>${currencySymbol()}</button>
+          </div>
+        </div>
+        <p class="card-note" style="margin: -2px 4px 8px">Seguro social, pensión, renta… revisa tu boleta de pago. ${dedMode === 'pct' ? 'El porcentaje también se aplica a las horas extra.' : ''}</p>
+        ${calc &&
+        html`<div class="card" style="margin:8px 0">
+          <div class="head-row small"><span class="muted">Salario base</span><span class="num">${fmt(calc.base)}</span></div>
+          ${calc.extra > 0 && html`<div class="head-row small" style="margin-top:4px"><span class="muted">Horas extra y bonos</span><span class="num">+${fmt(calc.extra)}</span></div>`}
+          <div class="head-row small" style="margin-top:4px"><span class="muted">Descuentos</span><span class="num">−${fmt(calc.ded)}</span></div>
+          <div class="head-row" style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--line)"><span class="strong">Te llega este mes</span><span class="strong num">${fmt(calc.net)}</span></div>
+          <div class="small muted" style="margin-top:4px">Presupuesto (solo el salario base): ${fmt(calc.estimate)}</div>
+        </div>`}`
+      : html`<label class="field">
+          <span>Presupuesto (estimado)</span>
+          <input inputmode="decimal" placeholder="0.00" value=${est} onInput=${(e) => setEst(e.target.value)} />
+        </label>`}
     ${!isVar &&
     html`<label class="field">
         <span>${sec.paidLabel} (real)</span>
         <input inputmode="decimal" placeholder="Pendiente" value=${real} onInput=${(e) => setReal(e.target.value)} />
       </label>
       <div class="chips" style="margin: 0 2px 4px">
-        <button onClick=${() => setReal(est)} disabled=${!est.trim()}>Igual al presupuesto</button>
+        ${usePay
+          ? html`<button onClick=${() => setReal(amountInput(calc?.net))} disabled=${!calc}>Lo que me llega${calc ? ` (${fmt(calc.net)})` : ''}</button>`
+          : html`<button onClick=${() => setReal(est)} disabled=${!est.trim()}>Igual al presupuesto</button>`}
         <button onClick=${() => setReal('')}>Pendiente</button>
       </div>`}
     ${isVar &&
@@ -192,51 +240,3 @@ export function ConfirmSheet({ title, message, confirmLabel = 'Confirmar', dange
     <div class="btn-row"><button class="btn secondary" onClick=${ui.close}>Cancelar</button></div>
   `;
 }
-
-export function ImportSheet({ result, fileName }) {
-  const state = useStore();
-  const [year, setYear] = useState(result.year);
-  const list = keysFor(result, year);
-  const overwrite = list.filter((x) => !isMonthEmpty(state.months[x.key]));
-  const extras = list.flatMap((x) => variableRows(x.month).filter((r) => r.extra).map((r) => ({ month: x.key, name: r.name, real: r.real })));
-
-  const run = () => {
-    importMonths(list);
-    ui.close();
-    ui.toast(`Listo: ${list.length} ${list.length === 1 ? 'mes importado' : 'meses importados'}`);
-    go(`anio/${year}`);
-  };
-
-  return html`
-    <${SheetHead} title="Importar Excel" action=${run} actionLabel="Importar" />
-    <div class="notice" style="margin-top:4px"><${Icon} name="file" size=${20} /><div class="grow">${fileName}</div></div>
-    <div class="card" style="display:flex; align-items:center; gap:8px">
-      <div class="grow"><div class="strong">Año de los datos</div><div class="small muted">El Excel no guarda el año; lo saqué de las fechas de tus gastos.</div></div>
-      <button class="icon-btn" aria-label="Año anterior" onClick=${() => setYear(year - 1)}><${Icon} name="left" /></button>
-      <span class="strong num">${year}</span>
-      <button class="icon-btn" aria-label="Año siguiente" onClick=${() => setYear(year + 1)}><${Icon} name="right" /></button>
-    </div>
-    <div class="card flush">
-      ${list.map((x) => {
-        const s = summary(x.month);
-        return html`<div class="row" key=${x.key}>
-          <div class="grow">
-            <div class="name">${monthLabel(x.key)}</div>
-            <div class="meta">Ingresos ${fmt(s.ingresos.real)} · ${x.month.tx.length} ${x.month.tx.length === 1 ? 'gasto' : 'gastos'}</div>
-          </div>
-          <div class="end"><div class=${`amount ${s.sinUsar.real < 0 ? 'neg' : ''}`}>${fmt(s.sinUsar.real)}</div><div class="meta">sin usar</div></div>
-        </div>`;
-      })}
-    </div>
-    ${result.skipped.length > 0 && html`<p class="card-note" style="margin: 0 4px">Omití ${result.skipped.map((s) => s.sheet).join(', ')} porque no tienen datos.</p>`}
-    ${extras.length > 0 &&
-    html`<div class="notice">
-      <${Icon} name="info" size=${20} />
-      <div class="grow">${extras.map((e) => html`<div>En ${monthName(e.month)}, los gastos de «${e.name}» (${fmt(e.real)}) no tenían categoría en tu presupuesto; ahora se cuentan aparte.</div>`)}</div>
-    </div>`}
-    ${overwrite.length > 0 &&
-    html`<div class="notice"><${Icon} name="info" size=${20} /><div class="grow">Ya tienes datos en ${overwrite.map((x) => monthName(x.key)).join(', ')}. Se reemplazarán con los del Excel.</div></div>`}
-    <div class="btn-row"><button class="btn primary" onClick=${run}>Importar ${list.length} ${list.length === 1 ? 'mes' : 'meses'}</button></div>
-  `;
-}
-

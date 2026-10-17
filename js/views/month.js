@@ -1,6 +1,6 @@
 import { html, useState, useEffect, useRef } from '../../vendor/preact-htm.js';
 import { useStore, ui, go, Icon, Dot, Meter, Money, Segmented } from '../components.js';
-import { SECTIONS, OUT_KEYS, summary, isMonthEmpty, rowsOf, diffOf, sectionOf } from '../calc.js';
+import { SECTIONS, OUT_KEYS, summary, isMonthEmpty, rowsOf, diffOf, sectionOf, payBreakdown } from '../calc.js';
 import { togglePaid, setNotes, clearMonth } from '../store.js';
 import { fmt, monthLabel, currentKey, shiftKey, fmtDateLong } from '../format.js';
 import { GroupedBars, Donut, BarsLegend } from '../charts.js';
@@ -129,6 +129,12 @@ function Budget({ m, monthKey }) {
   <p class="card-note" style="margin: 0 4px">Toca el círculo para marcar algo como pagado o recibido (copia el presupuesto al real). Toca el renglón para cambiar montos.</p>`;
 }
 
+function payMeta(it) {
+  const p = payBreakdown(it.pay);
+  if (!p) return '';
+  return `Base ${fmt(p.base)}${p.extra > 0 ? ` + extras ${fmt(p.extra)}` : ''} − desc. ${fmt(p.ded)}`;
+}
+
 function ItemRow({ it, sec, monthKey }) {
   const paid = it.real != null;
   const note = diffNote(sec, it);
@@ -141,7 +147,7 @@ function ItemRow({ it, sec, monthKey }) {
     <button class="grow" style="display:flex;align-items:center;gap:12px;text-align:left;min-width:0" onClick=${() => ui.open('item', { monthKey, section: sec.key, item: it })}>
       <div class="grow">
         <div class="name">${it.name}</div>
-        <div class="meta">Presupuesto ${fmt(it.est)}${note ? ' · ' : ''}${note}</div>
+        <div class="meta">${payMeta(it) || `Presupuesto ${fmt(it.est)}`}${note ? ' · ' : ''}${note}</div>
       </div>
       <div class="end">
         <div class="amount">${paid ? fmt(it.real) : '—'}</div>

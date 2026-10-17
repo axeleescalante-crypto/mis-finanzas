@@ -7,10 +7,10 @@ import { MonthView } from './views/month.js';
 import { DebtsView } from './views/debts.js';
 import { YearView } from './views/year.js';
 import { SettingsView } from './views/settings.js';
-import { TxSheet, ItemSheet, DebtSheet, ConfirmSheet, ImportSheet } from './views/sheets.js';
+import { TxSheet, ItemSheet, DebtSheet, ConfirmSheet } from './views/sheets.js';
 import { Welcome } from './views/welcome.js';
 
-const SHEETS = { tx: TxSheet, item: ItemSheet, debt: DebtSheet, confirm: ConfirmSheet, import: ImportSheet, message: MessageSheet, welcome: Welcome };
+const SHEETS = { tx: TxSheet, item: ItemSheet, debt: DebtSheet, confirm: ConfirmSheet, message: MessageSheet, welcome: Welcome };
 
 const TABS = [
   { id: 'inicio', label: 'Inicio', icon: 'home' },

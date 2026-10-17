@@ -1,6 +1,6 @@
 // Guarda la app en el teléfono para que abra al instante y funcione sin internet.
 // Cambia CACHE (y VERSION en js/version.js) cada vez que publiques cambios.
-const CACHE = 'mis-finanzas-1.1.0';
+const CACHE = 'mis-finanzas-1.2.0';
 const ASSETS = [
   './',
   './index.html',
@@ -15,7 +15,6 @@ const ASSETS = [
   './js/store.js',
   './js/version.js',
   './js/xlsx-export.js',
-  './js/xlsx-import.js',
   './js/views/common.js',
   './js/views/debts.js',
   './js/views/home.js',

@@ -9,8 +9,8 @@ App de presupuesto personal para iPhone, basada en mi Excel de finanzas. Funcion
 - **Gastos:** registro rápido de cada gasto. El "real" de cada categoría de gastos variables se suma solo.
 - **Deudas:** pagos de cada mes y, si le pones el saldo, cuánto te falta y en cuántos meses terminas.
 - **Año:** resumen anual mes a mes, con gráficos.
-- **Ajustes:** importar el Excel original, exportar todo a Excel, guardar y restaurar respaldos, elegir la moneda y ver la guía.
-- **Primera vez:** guía de bienvenida de 3 pantallas y configuración inicial (moneda, ingreso, día de pago) con una plantilla de categorías comunes, para quien no tiene el Excel.
+- **Ajustes:** exportar todo a Excel, guardar y restaurar respaldos, elegir la moneda y ver la guía.
+- **Primera vez:** guía de bienvenida de 3 pantallas y configuración inicial (moneda, ingreso, día de pago) con una plantilla de categorías comunes, para empezar desde cero.
 
 Las fórmulas son las del Excel:
 
@@ -30,9 +30,9 @@ El `.gitignore` bloquea archivos `.xlsx` y `.json` para no subir datos personale
 1. Abre la dirección de la app en **Safari**.
 2. Toca **Compartir** → **Agregar a pantalla de inicio** → **Agregar**.
 3. Abre la app desde el ícono **Finanzas**.
-4. En la app: **Importar mi Excel** (o Ajustes → Importar desde Excel).
+4. La guía de bienvenida te ayuda a armar tu primer mes.
 
-Los datos de Safari y los de la app instalada están separados en iOS, así que importa el Excel desde la app instalada.
+Los datos de Safari y los de la app instalada están separados en iOS, así que úsala desde el ícono.
 
 ## Publicar con GitHub Pages
 
@@ -53,7 +53,7 @@ index.html, manifest.webmanifest, sw.js   App instalable y funcionamiento sin in
 css/app.css                                Estilos (modo claro y oscuro)
 js/calc.js                                 Cálculos (las fórmulas del Excel)
 js/store.js                                Datos guardados en el teléfono
-js/xlsx-import.js, js/xlsx-export.js       Leer el Excel original y exportar a Excel
+js/xlsx-export.js                          Exportar a Excel
 js/charts.js                               Gráficos
 js/views/                                  Pantallas
 vendor/                                    Librerías incluidas (con sus licencias)
