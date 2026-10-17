@@ -94,9 +94,8 @@ test('la exportación produce un .xlsx con todas las hojas', () => {
 
 test('plantilla sugerida para empezar desde cero', async () => {
   const { templateMonth } = await import('../js/calc.js');
-  const m = templateMonth({ base: 1000, extra: null, ded: 20, dedMode: 'pct' });
-  assert.equal(m.ingresos[0].est, 800);
-  assert.equal(m.ingresos[0].pay.base, 1000);
+  const m = templateMonth(1234.56);
+  assert.equal(m.ingresos[0].est, 1234.56);
   assert.ok(m.fijos.length >= 5 && m.variables.length >= 4);
   assert.ok(m.fijos.every((it) => it.est === null && it.real === null));
   assert.equal(summary(m).porPagar, 0);
@@ -115,19 +114,3 @@ test('monedas y montos con formato europeo', async () => {
   assert.equal(parseAmount('Q 150'), 150);
 });
 
-test('salario variable: base + horas extra − descuentos', async () => {
-  const { payBreakdown, receivedAmount, copyBudget } = await import('../js/calc.js');
-  const pct = payBreakdown({ base: 1000, extra: 200, ded: 10, dedMode: 'pct' });
-  assert.deepEqual(pct, { base: 1000, extra: 200, gross: 1200, ded: 120, net: 1080, estimate: 900 });
-  const amt = payBreakdown({ base: 1000, extra: 200, ded: 150, dedMode: 'amt' });
-  assert.equal(amt.net, 1050);
-  assert.equal(amt.estimate, 850);
-  const it = { id: 'x', name: 'Salario', est: 900, real: null, pay: { base: 1000, extra: 200, ded: 10, dedMode: 'pct' } };
-  assert.equal(receivedAmount(it), 1080);
-  const m = emptyMonth();
-  m.ingresos = [it];
-  assert.equal(summary(m).ingresoPendiente, 1080);
-  const next = copyBudget(m);
-  assert.equal(next.ingresos[0].pay.extra, null);
-  assert.equal(next.ingresos[0].est, 900);
-});

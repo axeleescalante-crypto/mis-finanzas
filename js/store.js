@@ -1,6 +1,6 @@
 // Estado de la app guardado en este dispositivo (localStorage).
 
-import { emptyMonth, uid, norm, copyBudget, templateMonth, payBreakdown, receivedAmount } from './calc.js';
+import { emptyMonth, uid, norm, copyBudget, templateMonth } from './calc.js';
 import { round2, CURRENCIES, setCurrency } from './format.js';
 
 const STORAGE_KEY = 'mis-finanzas:v1';
@@ -21,12 +21,6 @@ function sanitizeMonth(m) {
   for (const k of ['ingresos', 'ahorros', 'fijos', 'deudas']) {
     out[k] = list(m?.[k]).map((it) => ({ id: str(it.id) || uid(), name: str(it.name), est: numOrNull(it.est), real: numOrNull(it.real) }));
   }
-  list(m?.ingresos).forEach((it, i) => {
-    const p = it.pay;
-    if (p && numOrNull(p.base) > 0) {
-      out.ingresos[i].pay = { base: numOrNull(p.base), extra: numOrNull(p.extra), ded: numOrNull(p.ded), dedMode: p.dedMode === 'amt' ? 'amt' : 'pct' };
-    }
-  });
   out.variables = list(m?.variables).map((it) => ({ id: str(it.id) || uid(), name: str(it.name), est: numOrNull(it.est) }));
   out.tx = list(m?.tx).map((t) => ({
     id: str(t.id) || uid(),
@@ -125,16 +119,8 @@ export function saveItem(key, section, item) {
         if (norm(existing.name) !== norm(name)) for (const t of m.tx) if (norm(t.cat) === norm(existing.name)) t.cat = name;
         Object.assign(existing, { name, est: item.est });
       } else list.push({ id: uid(), name, est: item.est });
-    } else {
-      const data = { name, est: item.est, real: item.real ?? null };
-      const target = existing || { id: uid() };
-      Object.assign(target, data);
-      if (section === 'ingresos') {
-        if (item.pay) target.pay = item.pay;
-        else delete target.pay;
-      }
-      if (!existing) list.push(target);
-    }
+    } else if (existing) Object.assign(existing, { name, est: item.est, real: item.real });
+    else list.push({ id: uid(), name, est: item.est, real: item.real ?? null });
   });
 }
 
@@ -148,13 +134,13 @@ export function deleteItem(key, section, id) {
 export function togglePaid(key, section, id) {
   update((d) => {
     const it = d.months[key]?.[section].find((x) => x.id === id);
-    if (it) it.real = it.real == null ? receivedAmount(it) : null;
+    if (it) it.real = it.real == null ? it.est || 0 : null;
   });
 }
 
 export function markIncomeReceived(key) {
   update((d) => {
-    for (const it of d.months[key]?.ingresos || []) if (it.real == null) it.real = receivedAmount(it);
+    for (const it of d.months[key]?.ingresos || []) if (it.real == null) it.real = it.est || 0;
   });
 }
 
@@ -209,12 +195,12 @@ export function startTemplateMonth(key) {
 }
 
 // Primera vez: guarda moneda, día de pago y crea el mes con la plantilla.
-export function finishOnboarding(key, { currency, payday, pay, template }) {
+export function finishOnboarding(key, { currency, payday, income, template }) {
   update((d) => {
     d.settings.currency = currency;
     d.settings.payday = payday;
     d.meta.onboarded = true;
-    if (template === 'plantilla') d.months[key] = templateMonth(pay);
+    if (template === 'plantilla') d.months[key] = templateMonth(income);
   });
 }
 

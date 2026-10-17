@@ -33,7 +33,7 @@ export function Home() {
 
 function MonthOverview({ m, monthKey, pay }) {
   const s = summary(m);
-  const payItem = m.ingresos.find((it) => it.pay && it.real == null);
+  const pendingIncome = m.ingresos.find((it) => it.real == null);
   const recent = sortTx(m.tx).slice(0, 5);
   const perDay = s.teQuedaria > 0 && pay.days > 0 && pay.date.getMonth() === new Date().getMonth() ? s.teQuedaria / pay.days : null;
 
@@ -47,7 +47,7 @@ function MonthOverview({ m, monthKey, pay }) {
         <div class="grow">Tu ingreso de <b>${fmt(s.ingresoPendiente)}</b> todavía no está marcado como recibido.</div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <button class="btn small primary" onClick=${() => markIncomeReceived(monthKey)}>Recibido</button>
-          ${payItem && html`<button class="btn small secondary" style="background:var(--card)" onClick=${() => ui.open('item', { monthKey, section: 'ingresos', item: payItem })}>Horas extra</button>`}
+          ${pendingIncome && html`<button class="btn small secondary" style="background:var(--card)" onClick=${() => ui.open('item', { monthKey, section: 'ingresos', item: pendingIncome })}>Otro monto</button>`}
         </div>
       </div>`}
       <div class="hero-split">

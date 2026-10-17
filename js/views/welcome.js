@@ -4,8 +4,7 @@
 import { html, useState } from '../../vendor/preact-htm.js';
 import { ui, Icon, Dot } from '../components.js';
 import { finishOnboarding, setOnboarded } from '../store.js';
-import { CURRENCIES, currentKey, parseAmount, MONTHS, fmt } from '../format.js';
-import { payBreakdown } from '../calc.js';
+import { CURRENCIES, currentKey, parseAmount, MONTHS } from '../format.js';
 
 const SLIDES = [
   {
@@ -52,20 +51,14 @@ function Slide({ s }) {
 
 function Setup({ onBack }) {
   const [currency, setCurrency] = useState('USD');
-  const [base, setBase] = useState('');
-  const [ded, setDed] = useState('');
+  const [income, setIncome] = useState('');
   const [payday, setPayday] = useState(30);
   const [err, setErr] = useState('');
 
-  const preview = payBreakdown(parseAmount(base) > 0 ? { base: parseAmount(base), ded: parseAmount(ded), dedMode: 'pct' } : null);
-
   const start = (template) => {
-    const b = base.trim() ? parseAmount(base) : null;
-    if (base.trim() && !(b > 0)) return setErr('Revisa tu salario base.');
-    const d = ded.trim() ? parseAmount(ded) : null;
-    if (d != null && (d < 0 || d >= 100)) return setErr('Los descuentos van en porcentaje (de 0 a 99).');
-    const pay = b ? { base: b, extra: null, ded: d, dedMode: 'pct' } : null;
-    finishOnboarding(currentKey(), { currency, payday, pay, template });
+    const n = income.trim() ? parseAmount(income) : null;
+    if (income.trim() && !(n > 0)) return setErr('Revisa tu salario.');
+    finishOnboarding(currentKey(), { currency, payday, income: n, template });
     if (template) location.hash = `#/mes/${currentKey()}/presupuesto`;
   };
 
@@ -78,17 +71,11 @@ function Setup({ onBack }) {
         ${Object.entries(CURRENCIES).map(([code, c]) => html`<option key=${code} value=${code}>${c.label} (${code})</option>`)}
       </select>
     </label>
-    <div class="field-row" style="margin:10px 0">
-      <label class="field">
-        <span>Salario base al mes</span>
-        <input inputmode="decimal" placeholder="Opcional" value=${base} onInput=${(e) => setBase(e.target.value)} />
-      </label>
-      <label class="field">
-        <span>Descuentos de ley (%)</span>
-        <input inputmode="decimal" placeholder="Ej. 15" value=${ded} onInput=${(e) => setDed(e.target.value)} />
-      </label>
-    </div>
-    ${preview && html`<p class="card-note" style="margin:-2px 4px 8px">Te llegarían unos <b>${fmt(preview.net)}</b> al mes. Si haces horas extra o recibes bonos, los agregas cada mes en tu ingreso.</p>`}
+    <label class="field">
+      <span>Salario líquido al mes (opcional)</span>
+      <input inputmode="decimal" placeholder="0.00" value=${income} onInput=${(e) => setIncome(e.target.value)} />
+    </label>
+    <p class="card-note" style="margin:-2px 4px 8px">Lo que te llega ya con los descuentos de ley, sin horas extra. En tu boleta de pago aparece como «Líquido a entregar». Si un mes te llega más, lo cambias ese mes.</p>
     <label class="field">
       <span>¿Qué día del mes te pagan?</span>
       <select value=${payday} onChange=${(e) => setPayday(+e.target.value)}>

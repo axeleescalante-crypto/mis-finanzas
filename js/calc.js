@@ -48,21 +48,6 @@ export function variableRows(m) {
   return rows;
 }
 
-// Salario variable: base + extras (horas extra, bonos) − descuentos de ley.
-// Los descuentos pueden ser un porcentaje (se aplica también a los extras) o un monto fijo.
-export function payBreakdown(pay) {
-  if (!pay || !(pay.base > 0)) return null;
-  const pct = pay.dedMode !== 'amt';
-  const dedOn = (g) => round2(pct ? (g * (pay.ded || 0)) / 100 : pay.ded || 0);
-  const extra = pay.extra || 0;
-  const gross = round2(pay.base + extra);
-  const ded = dedOn(gross);
-  return { base: pay.base, extra, gross, ded, net: round2(gross - ded), estimate: round2(pay.base - dedOn(pay.base)) };
-}
-
-// Lo que se registra como recibido al marcar un ingreso.
-export const receivedAmount = (it) => payBreakdown(it.pay)?.net ?? (it.est || 0);
-
 export const rowsOf = (m, key) => (key === 'variables' ? variableRows(m) : m[key]);
 
 export function diffOf(sectionKey, it) {
@@ -96,7 +81,7 @@ export function summary(m) {
   let porPagar = 0;
   for (const k of ['ahorros', 'fijos', 'deudas']) for (const it of m[k]) if (it.real == null) porPagar += it.est || 0;
   let ingresoPendiente = 0;
-  for (const it of m.ingresos) if (it.real == null) ingresoPendiente += receivedAmount(it);
+  for (const it of m.ingresos) if (it.real == null) ingresoPendiente += it.est || 0;
   s.porPagar = round2(porPagar);
   s.ingresoPendiente = round2(ingresoPendiente);
   // Lo que quedaría al final del mes: con el ingreso esperado y pagando lo pendiente.
@@ -114,20 +99,12 @@ export function hasMoney(m) {
 export function copyBudget(from) {
   const m = emptyMonth();
   for (const s of SECTIONS) {
-    m[s.key] = from[s.key].map((it) => {
-      if (s.auto) return { id: uid(), name: it.name, est: it.est ?? null };
-      const copy = { id: uid(), name: it.name, est: it.est ?? null, real: null };
-      if (it.pay) {
-        copy.pay = { ...it.pay, extra: null };
-        copy.est = payBreakdown(copy.pay)?.estimate ?? copy.est;
-      }
-      return copy;
-    });
+    m[s.key] = from[s.key].map((it) => (s.auto ? { id: uid(), name: it.name, est: it.est ?? null } : { id: uid(), name: it.name, est: it.est ?? null, real: null }));
   }
   return m;
 }
 
-// Plantilla para quien empieza sin Excel: categorías comunes, montos en blanco.
+// Plantilla para empezar: categorías comunes, montos en blanco.
 export const TEMPLATE = {
   ingresos: ['Salario'],
   ahorros: ['Fondo de emergencia'],
@@ -136,15 +113,12 @@ export const TEMPLATE = {
   deudas: [],
 };
 
-export function templateMonth(pay = null) {
+export function templateMonth(income = null) {
   const m = emptyMonth();
   for (const [k, names] of Object.entries(TEMPLATE)) {
     m[k] = names.map((name) => (k === 'variables' ? { id: uid(), name, est: null } : { id: uid(), name, est: null, real: null }));
   }
-  if (pay) {
-    m.ingresos[0].pay = pay;
-    m.ingresos[0].est = payBreakdown(pay)?.estimate ?? null;
-  }
+  m.ingresos[0].est = income;
   return m;
 }
 
