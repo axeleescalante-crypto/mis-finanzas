@@ -1,8 +1,8 @@
 import { html } from '../../vendor/preact-htm.js';
 import { useStore, ui, Icon, isStandalone } from '../components.js';
-import { setPayday, resetAll } from '../store.js';
+import { setPayday, resetAll, setCurrencyCode } from '../store.js';
 import { importExcelFlow, exportExcel, saveBackup, restoreBackup } from '../actions.js';
-import { fmtDate } from '../format.js';
+import { fmtDate, CURRENCIES } from '../format.js';
 import { VERSION } from '../version.js';
 
 function ActionRow({ icon, title, meta, onClick }) {
@@ -39,6 +39,17 @@ export function SettingsView() {
         <span class="strong num" style="min-width:24px;text-align:center">${payday}</span>
         <button class="icon-btn" aria-label="Un día después" disabled=${payday >= 31} onClick=${() => setPayday(payday + 1)}><${Icon} name="right" /></button>
       </div>
+      <label class="row">
+        <div class="grow"><div class="name">Moneda</div><div class="meta">${CURRENCIES[state.settings.currency].label}</div></div>
+        <select class="select" value=${state.settings.currency} onChange=${(e) => setCurrencyCode(e.target.value)} aria-label="Moneda">
+          ${Object.keys(CURRENCIES).map((code) => html`<option key=${code} value=${code}>${code}</option>`)}
+        </select>
+      </label>
+    </div>
+
+    <h2 class="subtitle">Ayuda</h2>
+    <div class="card flush">
+      <${ActionRow} icon="info" title="Ver guía de bienvenida" meta="Cómo funciona la app, en 3 pasos" onClick=${() => ui.open('welcome', { mode: 'guide' })} />
     </div>
 
     ${!isStandalone() &&

@@ -1,6 +1,36 @@
 // Formatos de dinero, fechas y meses.
 
-const money = new Intl.NumberFormat('es-SV', { style: 'currency', currency: 'USD' });
+// Monedas disponibles y el formato regional de cada una.
+export const CURRENCIES = {
+  USD: { label: 'Dólar estadounidense', locale: 'es-SV' },
+  EUR: { label: 'Euro', locale: 'es-ES' },
+  MXN: { label: 'Peso mexicano', locale: 'es-MX' },
+  GTQ: { label: 'Quetzal', locale: 'es-GT' },
+  HNL: { label: 'Lempira', locale: 'es-HN' },
+  NIO: { label: 'Córdoba', locale: 'es-NI' },
+  CRC: { label: 'Colón costarricense', locale: 'es-CR' },
+  PAB: { label: 'Balboa', locale: 'es-PA' },
+  DOP: { label: 'Peso dominicano', locale: 'es-DO' },
+  COP: { label: 'Peso colombiano', locale: 'es-CO' },
+  PEN: { label: 'Sol', locale: 'es-PE' },
+  CLP: { label: 'Peso chileno', locale: 'es-CL' },
+  ARS: { label: 'Peso argentino', locale: 'es-AR' },
+  BOB: { label: 'Boliviano', locale: 'es-BO' },
+  PYG: { label: 'Guaraní', locale: 'es-PY' },
+  UYU: { label: 'Peso uruguayo', locale: 'es-UY' },
+};
+
+let money;
+let symbol = '$';
+
+export function setCurrency(code) {
+  const c = CURRENCIES[code] ? code : 'USD';
+  money = new Intl.NumberFormat(CURRENCIES[c].locale, { style: 'currency', currency: c });
+  symbol = money.formatToParts(0).find((p) => p.type === 'currency')?.value || c;
+}
+setCurrency('USD');
+
+export const currencySymbol = () => symbol;
 
 export const round2 = (n) => Math.round((n || 0) * 100) / 100;
 
@@ -17,8 +47,8 @@ export function fmtSigned(n) {
 export function fmtCompact(n) {
   const v = Math.abs(n);
   const sign = n < 0 ? '−' : '';
-  if (v >= 1000) return `${sign}$${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K`;
-  return `${sign}$${Math.round(v)}`;
+  if (v >= 1000) return `${sign}${symbol}${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K`;
+  return `${sign}${symbol}${Math.round(v)}`;
 }
 
 export const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -66,12 +96,15 @@ export function fmtDateLong(iso) {
   return `${WEEKDAYS[new Date(y, m - 1, d).getDay()]} ${d} ${MONTHS_SHORT[m - 1]}`;
 }
 
-// Acepta "2,345.60", "19,95", "$ 30" y devuelve número o null.
+// Acepta "2,345.60", "2.345,60", "19,95", "$ 30" y devuelve número o null.
 export function parseAmount(str) {
   if (typeof str === 'number') return Number.isFinite(str) ? round2(str) : null;
-  let s = String(str ?? '').replace(/[\s$]/g, '');
+  let s = String(str ?? '').replace(/[^\d.,-]/g, '');
   if (!s) return null;
-  if (s.includes(',') && s.includes('.')) s = s.replace(/,/g, '');
+  if (s.includes(',') && s.includes('.')) {
+    // El último separador es el decimal.
+    s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  }
   else if (/,\d{1,2}$/.test(s)) s = s.replace(',', '.');
   else s = s.replace(/,/g, '');
   const n = Number(s);

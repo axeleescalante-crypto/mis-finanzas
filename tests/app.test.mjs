@@ -145,3 +145,25 @@ test('la exportación produce un .xlsx con todas las hojas', () => {
   assert.match(wb, /Deudas/);
   assert.ok(files['xl/worksheets/sheet2.xml']);
 });
+
+test('plantilla sugerida para empezar sin Excel', async () => {
+  const { templateMonth } = await import('../js/calc.js');
+  const m = templateMonth(800);
+  assert.equal(m.ingresos[0].est, 800);
+  assert.ok(m.fijos.length >= 5 && m.variables.length >= 4);
+  assert.ok(m.fijos.every((it) => it.est === null && it.real === null));
+  assert.equal(summary(m).porPagar, 0);
+});
+
+test('monedas y montos con formato europeo', async () => {
+  const { setCurrency, fmt, fmtCompact } = await import('../js/format.js');
+  setCurrency('GTQ');
+  assert.match(fmt(1500), /Q/);
+  assert.match(fmtCompact(1500), /^Q1\.5K$/);
+  setCurrency('EUR');
+  assert.match(fmt(10), /€/);
+  setCurrency('USD');
+  assert.equal(fmt(1500), '$1,500.00');
+  assert.equal(parseAmount('2.345,60'), 2345.6);
+  assert.equal(parseAmount('Q 150'), 150);
+});

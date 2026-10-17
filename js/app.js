@@ -1,5 +1,5 @@
 import { html, render, useState, useEffect } from '../vendor/preact-htm.js';
-import { useRoute, Icon, SheetHost, watchKeyboard } from './components.js';
+import { useRoute, useStore, Icon, SheetHost, watchKeyboard } from './components.js';
 import { requestPersistence, getSaveError } from './store.js';
 import { MessageSheet } from './actions.js';
 import { Home } from './views/home.js';
@@ -8,8 +8,9 @@ import { DebtsView } from './views/debts.js';
 import { YearView } from './views/year.js';
 import { SettingsView } from './views/settings.js';
 import { TxSheet, ItemSheet, DebtSheet, ConfirmSheet, ImportSheet } from './views/sheets.js';
+import { Welcome } from './views/welcome.js';
 
-const SHEETS = { tx: TxSheet, item: ItemSheet, debt: DebtSheet, confirm: ConfirmSheet, import: ImportSheet, message: MessageSheet };
+const SHEETS = { tx: TxSheet, item: ItemSheet, debt: DebtSheet, confirm: ConfirmSheet, import: ImportSheet, message: MessageSheet, welcome: Welcome };
 
 const TABS = [
   { id: 'inicio', label: 'Inicio', icon: 'home' },
@@ -52,6 +53,8 @@ function App() {
   const [name, a, b] = useRoute();
   const waiting = useServiceWorker();
   const saveError = getSaveError();
+  const state = useStore();
+  const showWelcome = !state.meta.onboarded && !Object.keys(state.months).length;
 
   let view;
   if (name === 'mes') view = html`<${MonthView} keyParam=${a} tabParam=${b} />`;
@@ -81,6 +84,7 @@ function App() {
         </a>`,
       )}
     </nav>
+    ${showWelcome && html`<${Welcome} mode="first" />`}
     <${SheetHost} registry=${SHEETS} />
   </div>`;
 }

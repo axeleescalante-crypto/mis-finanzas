@@ -3,7 +3,7 @@
 import { html } from '../../vendor/preact-htm.js';
 import { useStore, ui, go, Empty } from '../components.js';
 import { previousBudgetKey } from '../calc.js';
-import { copyMonthFrom, startBlankMonth } from '../store.js';
+import { copyMonthFrom, startBlankMonth, startTemplateMonth } from '../store.js';
 import { fmt, fmtDate, monthName, monthLabel } from '../format.js';
 import { importExcelFlow } from '../actions.js';
 
@@ -13,9 +13,10 @@ export function EmptyMonth({ monthKey }) {
   const hasAny = Object.keys(state.months).length > 0;
   if (!hasAny) {
     return html`<div class="card">
-      <${Empty} title="Empecemos" text="Puedes traer los meses de tu Excel o armar tu presupuesto desde cero.">
-        <button class="btn primary" onClick=${importExcelFlow}>Importar mi Excel</button>
-        <button class="btn secondary" onClick=${() => { startBlankMonth(monthKey); go(`mes/${monthKey}/presupuesto`); }}>Empezar desde cero</button>
+      <${Empty} title="Empecemos" text="Usa la plantilla sugerida y solo pon tus montos, o trae los meses de tu Excel.">
+        <button class="btn primary" onClick=${() => { startTemplateMonth(monthKey); go(`mes/${monthKey}/presupuesto`); }}>Usar plantilla sugerida</button>
+        <button class="btn secondary" onClick=${() => { startBlankMonth(monthKey); go(`mes/${monthKey}/presupuesto`); }}>Empezar en blanco</button>
+        <button class="btn secondary" onClick=${importExcelFlow}>Importar mi Excel</button>
       <//>
     </div>`;
   }

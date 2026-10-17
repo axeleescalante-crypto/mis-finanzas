@@ -104,6 +104,24 @@ export function copyBudget(from) {
   return m;
 }
 
+// Plantilla para quien empieza sin Excel: categorías comunes, montos en blanco.
+export const TEMPLATE = {
+  ingresos: ['Salario'],
+  ahorros: ['Fondo de emergencia'],
+  fijos: ['Alquiler o vivienda', 'Supermercado', 'Luz y agua', 'Internet y celular', 'Transporte', 'Suscripciones'],
+  variables: ['Comida fuera', 'Gasolina', 'Salidas y entretenimiento', 'Compras personales', 'Imprevistos'],
+  deudas: [],
+};
+
+export function templateMonth(income = null) {
+  const m = emptyMonth();
+  for (const [k, names] of Object.entries(TEMPLATE)) {
+    m[k] = names.map((name) => (k === 'variables' ? { id: uid(), name, est: null } : { id: uid(), name, est: null, real: null }));
+  }
+  if (income != null) m.ingresos[0].est = income;
+  return m;
+}
+
 // Mes más reciente anterior a `key` que tenga presupuesto.
 export function previousBudgetKey(months, key) {
   return Object.keys(months)

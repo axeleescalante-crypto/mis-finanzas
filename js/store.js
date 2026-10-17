@@ -1,7 +1,7 @@
 // Estado de la app guardado en este dispositivo (localStorage).
 
-import { emptyMonth, uid, norm, copyBudget } from './calc.js';
-import { round2 } from './format.js';
+import { emptyMonth, uid, norm, copyBudget, templateMonth } from './calc.js';
+import { round2, CURRENCIES, setCurrency } from './format.js';
 
 const STORAGE_KEY = 'mis-finanzas:v1';
 const KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -9,7 +9,7 @@ const listeners = new Set();
 let saveError = null;
 
 function initial() {
-  return { version: 1, settings: { payday: 30 }, months: {}, debts: [], meta: { lastBackup: null } };
+  return { version: 1, settings: { payday: 30, currency: 'USD' }, months: {}, debts: [], meta: { lastBackup: null, onboarded: false } };
 }
 
 const numOrNull = (v) => (typeof v === 'number' && Number.isFinite(v) ? round2(v) : null);
@@ -39,6 +39,7 @@ export function sanitize(raw) {
   if (!raw || typeof raw !== 'object') return s;
   const p = raw.settings?.payday;
   if (Number.isInteger(p) && p >= 1 && p <= 31) s.settings.payday = p;
+  if (CURRENCIES[raw.settings?.currency]) s.settings.currency = raw.settings.currency;
   if (raw.months && typeof raw.months === 'object') {
     for (const [k, m] of Object.entries(raw.months)) if (KEY_RE.test(k)) s.months[k] = sanitizeMonth(m);
   }
@@ -49,6 +50,8 @@ export function sanitize(raw) {
       .filter((d) => d.balance != null && d.since);
   }
   if (typeof raw.meta?.lastBackup === 'string') s.meta.lastBackup = raw.meta.lastBackup;
+  // Quien ya tenía datos no necesita la bienvenida.
+  s.meta.onboarded = raw.meta?.onboarded === true || Object.keys(s.months).length > 0;
   return s;
 }
 
@@ -63,6 +66,7 @@ function load() {
 }
 
 let state = load();
+setCurrency(state.settings.currency);
 
 export const getState = () => state;
 export const getSaveError = () => saveError;
@@ -73,6 +77,7 @@ export function subscribe(fn) {
 }
 
 function commit(next) {
+  if (next.settings.currency !== state.settings.currency) setCurrency(next.settings.currency);
   state = next;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -182,6 +187,40 @@ export function copyMonthFrom(key, fromKey) {
   });
 }
 
+export function startTemplateMonth(key, income = null) {
+  update((d) => {
+    d.months[key] = templateMonth(income);
+    d.meta.onboarded = true;
+  });
+}
+
+// Primera vez: guarda moneda, día de pago y crea el mes (plantilla o en blanco).
+export function finishOnboarding(key, { currency, payday, income, template }) {
+  update((d) => {
+    d.settings.currency = currency;
+    d.settings.payday = payday;
+    d.meta.onboarded = true;
+    if (template === 'plantilla') d.months[key] = templateMonth(income);
+    else if (template === 'blanco') {
+      const m = emptyMonth();
+      m.ingresos.push({ id: uid(), name: 'Salario', est: income, real: null });
+      d.months[key] = m;
+    }
+  });
+}
+
+export function setCurrencyCode(code) {
+  update((d) => {
+    d.settings.currency = code;
+  });
+}
+
+export function setOnboarded() {
+  update((d) => {
+    d.meta.onboarded = true;
+  });
+}
+
 export function startBlankMonth(key) {
   update((d) => {
     const m = monthOf(d, key);
@@ -198,6 +237,7 @@ export function clearMonth(key) {
 export function importMonths(list) {
   update((d) => {
     for (const { key, month } of list) d.months[key] = clone(month);
+    d.meta.onboarded = true;
   });
 }
 
@@ -241,5 +281,9 @@ export function replaceAll(raw) {
 }
 
 export function resetAll() {
-  commit(initial());
+  // Sin la bienvenida, para poder restaurar un respaldo enseguida.
+  const next = initial();
+  next.meta.onboarded = true;
+  next.settings.currency = state.settings.currency;
+  commit(next);
 }
