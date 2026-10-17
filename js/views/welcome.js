@@ -4,7 +4,7 @@
 import { html, useState } from '../../vendor/preact-htm.js';
 import { ui, Icon, Dot } from '../components.js';
 import { finishOnboarding, setOnboarded } from '../store.js';
-import { CURRENCIES, currentKey, parseAmount, MONTHS } from '../format.js';
+import { CURRENCIES, currentKey, parseAmount, MONTHS, currencySymbol, setCurrency as applyCurrency } from '../format.js';
 
 const SLIDES = [
   {
@@ -67,13 +67,13 @@ function Setup({ onBack }) {
     <p>Puedes cambiar todo esto después en Ajustes.</p>
     <label class="field">
       <span>Moneda</span>
-      <select value=${currency} onChange=${(e) => setCurrency(e.target.value)}>
+      <select value=${currency} onChange=${(e) => { applyCurrency(e.target.value); setCurrency(e.target.value); }}>
         ${Object.entries(CURRENCIES).map(([code, c]) => html`<option key=${code} value=${code}>${c.label} (${code})</option>`)}
       </select>
     </label>
     <label class="field">
       <span>Salario líquido al mes (opcional)</span>
-      <input inputmode="decimal" placeholder="0.00" value=${income} onInput=${(e) => setIncome(e.target.value)} />
+      <div class="money-input"><b>${currencySymbol()}</b><input inputmode="decimal" placeholder="0.00" value=${income} onInput=${(e) => setIncome(e.target.value)} /></div>
     </label>
     <p class="card-note" style="margin:-2px 4px 8px">Lo que te llega ya con los descuentos de ley, sin horas extra. En tu boleta de pago aparece como «Líquido a entregar». Si un mes te llega más, lo cambias ese mes.</p>
     <label class="field">

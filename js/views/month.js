@@ -141,7 +141,7 @@ function ItemRow({ it, sec, monthKey }) {
     <button class="grow" style="display:flex;align-items:center;gap:12px;text-align:left;min-width:0" onClick=${() => ui.open('item', { monthKey, section: sec.key, item: it })}>
       <div class="grow">
         <div class="name">${it.name}</div>
-        <div class="meta">Presupuesto ${fmt(it.est)}${note ? ' · ' : ''}${note}</div>
+        <div class="meta">Planeado ${fmt(it.est)}${note ? ' · ' : ''}${note}</div>
       </div>
       <div class="end">
         <div class="amount">${paid ? fmt(it.real) : '—'}</div>

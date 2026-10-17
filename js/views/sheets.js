@@ -4,7 +4,7 @@ import { html, useState } from '../../vendor/preact-htm.js';
 import { useStore, ui, SheetHead } from '../components.js';
 import { emptyMonth, norm, sectionOf, debtsOverview } from '../calc.js';
 import { saveTx, deleteTx, saveItem, deleteItem, setDebtInfo, renameDebt } from '../store.js';
-import { fmt, parseAmount, amountInput, todayISO, currentKey, monthLabel, monthName, daysInMonth } from '../format.js';
+import { fmt, parseAmount, amountInput, todayISO, currentKey, monthLabel, monthName, daysInMonth, currencySymbol } from '../format.js';
 
 function defaultDate(key) {
   const cur = currentKey();
@@ -43,10 +43,7 @@ export function TxSheet({ monthKey, tx }) {
 
   return html`
     <${SheetHead} title=${tx ? 'Editar gasto' : 'Nuevo gasto'} action=${save} />
-    <label class="field big">
-      <span>Cantidad</span>
-      <input inputmode="decimal" enterkeyhint="done" placeholder="$0.00" value=${amount} onInput=${(e) => setAmount(e.target.value)} />
-    </label>
+    <${MoneyInput} big label="¿Cuánto gastaste?" value=${amount} onInput=${setAmount} />
     <div class="field">
       <span>Categoría</span>
       <div class="chips">
@@ -72,22 +69,48 @@ export function TxSheet({ monthKey, tx }) {
   `;
 }
 
+// Campo de dinero con el símbolo de la moneda delante.
+export function MoneyInput({ label, value, onInput, placeholder = '0.00', big = false }) {
+  return html`<label class=${`field ${big ? 'big' : ''}`}>
+    <span>${label}</span>
+    <div class="money-input">
+      <b>${currencySymbol()}</b>
+      <input inputmode="decimal" placeholder=${placeholder} value=${value} onInput=${(e) => onInput(e.target.value)} />
+    </div>
+  </label>`;
+}
+
+const COPY = {
+  ingresos: { plan: 'Lo que normalmente te llega', planNote: 'Tu salario líquido, ya con los descuentos de ley y sin horas extra.', ask: '¿Ya te pagaron este mes?', yes: 'Sí, ya me pagaron', amount: '¿Cuánto te llegó?', amountNote: 'Míralo en tu boleta de pago: «Líquido a entregar». Si hiciste horas extra o te dieron bonos, ya vienen incluidos.' },
+  ahorros: { plan: '¿Cuánto planeas ahorrar al mes?', ask: '¿Ya lo apartaste este mes?', yes: 'Sí, ya lo aparté', amount: '¿Cuánto apartaste?' },
+  fijos: { plan: '¿Cuánto planeas pagar al mes?', ask: '¿Ya lo pagaste este mes?', yes: 'Sí, ya pagué', amount: '¿Cuánto pagaste?' },
+  deudas: { plan: '¿Cuánto es la cuota del mes?', ask: '¿Ya la pagaste este mes?', yes: 'Sí, ya pagué', amount: '¿Cuánto pagaste?' },
+  variables: { plan: '¿Cuánto planeas gastar al mes?' },
+};
+
 export function ItemSheet({ monthKey, section, item }) {
   const sec = sectionOf(section);
   const isVar = section === 'variables';
   const isIncome = section === 'ingresos';
+  const t = COPY[section];
   const editing = item && !item.extra;
   const [name, setName] = useState(item?.name || '');
   const [est, setEst] = useState(amountInput(item?.est));
+  const [done, setDone] = useState(!isVar && item?.real != null);
   const [real, setReal] = useState(isVar ? '' : amountInput(item?.real));
   const [err, setErr] = useState('');
 
+  const markDone = (v) => {
+    setDone(v);
+    if (v && !real.trim()) setReal(est);
+  };
   const save = () => {
     if (!name.trim()) return setErr('Escribe un nombre.');
     const e = est.trim() ? parseAmount(est) : null;
-    const r = !isVar && real.trim() ? parseAmount(real) : null;
-    if ((est.trim() && e == null) || (!isVar && real.trim() && r == null)) return setErr('Revisa las cantidades.');
-    saveItem(monthKey, section, { id: editing ? item.id : null, name, est: e, real: r });
+    const r = done && real.trim() ? parseAmount(real) : null;
+    if ((est.trim() && e == null) || (done && real.trim() && r == null)) return setErr('Revisa las cantidades: solo números.');
+    if (done && r == null) return setErr(`Escribe ${t.amount.toLowerCase().replace('¿', '').replace('?', '')}.`);
+    saveItem(monthKey, section, { id: editing ? item.id : null, name, est: e, real: done ? r : null });
     ui.close();
   };
   const remove = () => {
@@ -95,7 +118,7 @@ export function ItemSheet({ monthKey, section, item }) {
     ui.close();
     ui.toast('Eliminado');
   };
-  const diff = isIncome && est.trim() && real.trim() ? (parseAmount(real) || 0) - (parseAmount(est) || 0) : 0;
+  const diff = done && est.trim() && real.trim() ? (parseAmount(real) || 0) - (parseAmount(est) || 0) : 0;
 
   return html`
     <${SheetHead} title=${editing ? sec.label : `Agregar a ${sec.label.toLowerCase()}`} action=${save} />
@@ -103,25 +126,26 @@ export function ItemSheet({ monthKey, section, item }) {
       <span>Nombre</span>
       <input placeholder=${isVar ? 'Ej. Gasolina' : isIncome ? 'Ej. Salario' : section === 'deudas' ? 'Ej. Carro' : 'Ej. Alquiler'} value=${name} onInput=${(e) => setName(e.target.value)} />
     </label>
-    <label class="field">
-      <span>${isIncome ? 'Lo que normalmente te llega (presupuesto)' : 'Presupuesto (estimado)'}</span>
-      <input inputmode="decimal" placeholder="0.00" value=${est} onInput=${(e) => setEst(e.target.value)} />
-    </label>
-    ${isIncome && html`<p class="card-note" style="margin: -2px 4px 8px">Tu salario líquido, ya con los descuentos de ley y sin horas extra.</p>`}
+    <${MoneyInput} label=${t.plan} value=${est} onInput=${setEst} />
+    ${t.planNote && html`<p class="card-note" style="margin: -2px 4px 8px">${t.planNote}</p>`}
     ${!isVar &&
-    html`<label class="field">
-        <span>${isIncome ? 'Lo que te llegó este mes (real)' : `${sec.paidLabel} (real)`}</span>
-        <input inputmode="decimal" placeholder="Pendiente" value=${real} onInput=${(e) => setReal(e.target.value)} />
-      </label>
-      ${isIncome && html`<p class="card-note" style="margin: -2px 4px 8px">Míralo en tu boleta de pago: «Líquido a entregar». Si hiciste horas extra o te dieron bonos, ya vienen incluidos.</p>`}
-      ${diff > 0.004 && html`<p class="card-note pos" style="margin: -2px 4px 8px">Te llegaron ${fmt(diff)} más de lo normal.</p>`}
-      <div class="chips" style="margin: 0 2px 4px">
-        <button onClick=${() => setReal(est)} disabled=${!est.trim()}>${isIncome ? 'Lo normal' : 'Igual al presupuesto'}</button>
-        <button onClick=${() => setReal('')}>Pendiente</button>
-      </div>`}
+    html`<div class="field">
+        <span>${t.ask}</span>
+        <div class="seg" style="margin:6px 0 2px">
+          <button class=${!done ? 'on' : ''} onClick=${() => markDone(false)}>Todavía no</button>
+          <button class=${done ? 'on' : ''} onClick=${() => markDone(true)}>${t.yes}</button>
+        </div>
+      </div>
+      ${done &&
+      html`<${MoneyInput} label=${t.amount} value=${real} onInput=${setReal} />
+        ${t.amountNote && html`<p class="card-note" style="margin: -2px 4px 8px">${t.amountNote}</p>`}
+        ${Math.abs(diff) > 0.004 &&
+        html`<p class=${`card-note ${(isIncome ? diff > 0 : diff < 0) ? 'pos' : 'neg'}`} style="margin: -2px 4px 8px">
+          ${isIncome ? (diff > 0 ? `Te llegaron ${fmt(diff)} más de lo normal.` : `Te llegaron ${fmt(-diff)} menos de lo normal.`) : diff > 0 ? `Pagaste ${fmt(diff)} más de lo planeado.` : `Pagaste ${fmt(-diff)} menos de lo planeado.`}
+        </p>`}`}`}
     ${isVar &&
     html`<p class="card-note" style="margin: 0 4px 8px">
-      Lo real se calcula solo con tus gastos de esta categoría${item ? html` (${fmt(item.real)} este mes)` : ''}.
+      Lo que gastas se suma solo con cada «+ Gasto» de esta categoría${item ? html` (llevas ${fmt(item.real)} este mes)` : ''}.
     </p>`}
     ${err && html`<p class="error">${err}</p>`}
     <div class="btn-row"><button class="btn primary" onClick=${save}>${editing ? 'Guardar' : 'Agregar'}</button></div>
@@ -157,7 +181,7 @@ export function DebtSheet({ name }) {
       <div class="field-row">
         <label class="field" style="background: var(--field)">
           <span>Saldo</span>
-          <input inputmode="decimal" placeholder="$0.00" value=${balance} onInput=${(e) => setBalance(e.target.value)} />
+          <div class="money-input"><b>${currencySymbol()}</b><input inputmode="decimal" placeholder="0.00" value=${balance} onInput=${(e) => setBalance(e.target.value)} /></div>
         </label>
         <label class="field" style="background: var(--field)">
           <span>Al inicio de</span>
