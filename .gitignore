@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+# Nunca subir archivos con datos personales
+*.xlsx
+*.xls
+*.json
+!package.json
+!manifest.webmanifest

@@ -1,0 +1,9 @@
+{
+  "name": "mis-finanzas",
+  "private": true,
+  "type": "module",
+  "description": "App de presupuesto personal para iPhone (PWA).",
+  "scripts": {
+    "test": "node --test"
+  }
+}
