@@ -10,7 +10,7 @@ App de presupuesto personal para iPhone, basada en mi Excel de finanzas. Funcion
 - **Deudas:** pagos de cada mes y, si le pones el saldo, cuánto te falta y en cuántos meses terminas.
 - **Año:** resumen anual mes a mes, con gráficos.
 - **Ajustes:** exportar todo a Excel, guardar y restaurar respaldos, elegir la moneda y ver la guía.
-- **Primera vez:** guía de bienvenida de 3 pantallas y configuración inicial (moneda, ingreso, día de pago) con una plantilla de categorías comunes, para empezar desde cero.
+- **Primera vez:** guía de bienvenida de 3 pantallas y configuración inicial (moneda, ingreso, día de pago); el mes se arma con una plantilla de categorías comunes.
 
 Las fórmulas son las del Excel:
 

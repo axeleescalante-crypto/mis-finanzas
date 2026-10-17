@@ -208,20 +208,13 @@ export function startTemplateMonth(key) {
   });
 }
 
-// Primera vez: guarda moneda, día de pago y crea el mes (plantilla o en blanco).
+// Primera vez: guarda moneda, día de pago y crea el mes con la plantilla.
 export function finishOnboarding(key, { currency, payday, pay, template }) {
   update((d) => {
     d.settings.currency = currency;
     d.settings.payday = payday;
     d.meta.onboarded = true;
     if (template === 'plantilla') d.months[key] = templateMonth(pay);
-    else if (template === 'blanco') {
-      const m = emptyMonth();
-      const it = { id: uid(), name: 'Salario', est: payBreakdown(pay)?.estimate ?? null, real: null };
-      if (pay) it.pay = pay;
-      m.ingresos.push(it);
-      d.months[key] = m;
-    }
   });
 }
 
@@ -234,13 +227,6 @@ export function setCurrencyCode(code) {
 export function setOnboarded() {
   update((d) => {
     d.meta.onboarded = true;
-  });
-}
-
-export function startBlankMonth(key) {
-  update((d) => {
-    const m = monthOf(d, key);
-    if (!m.ingresos.length) m.ingresos.push({ id: uid(), name: 'Salario', est: null, real: null });
   });
 }
 

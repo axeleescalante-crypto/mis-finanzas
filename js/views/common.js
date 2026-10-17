@@ -3,7 +3,7 @@
 import { html } from '../../vendor/preact-htm.js';
 import { useStore, ui, go, Empty } from '../components.js';
 import { previousBudgetKey } from '../calc.js';
-import { copyMonthFrom, startBlankMonth, startTemplateMonth } from '../store.js';
+import { copyMonthFrom, startTemplateMonth } from '../store.js';
 import { fmt, fmtDate, monthName, monthLabel } from '../format.js';
 
 export function EmptyMonth({ monthKey }) {
@@ -12,17 +12,16 @@ export function EmptyMonth({ monthKey }) {
   const hasAny = Object.keys(state.months).length > 0;
   if (!hasAny) {
     return html`<div class="card">
-      <${Empty} title="Empecemos" text="Usa la plantilla sugerida y solo pon tus montos, o arma tu presupuesto desde cero.">
-        <button class="btn primary" onClick=${() => { startTemplateMonth(monthKey); go(`mes/${monthKey}/presupuesto`); }}>Usar plantilla sugerida</button>
-        <button class="btn secondary" onClick=${() => { startBlankMonth(monthKey); go(`mes/${monthKey}/presupuesto`); }}>Empezar en blanco</button>
+      <${Empty} title="Empecemos" text="Armamos tu presupuesto con categorías comunes; solo pones tus montos.">
+        <button class="btn primary" onClick=${() => { startTemplateMonth(monthKey); go(`mes/${monthKey}/presupuesto`); }}>Empezar</button>
       <//>
     </div>`;
   }
   return html`<div class="card">
     <${Empty} icon="copy" title=${`${monthName(monthKey)} está vacío`}
-      text=${prev ? `Copia el presupuesto de ${monthLabel(prev)}: mismos ingresos, gastos, deudas y categorías. Lo real queda en blanco para que lo vayas marcando.` : 'Arma el presupuesto de este mes.'}>
+      text=${prev ? `Copia el presupuesto de ${monthLabel(prev)}: mismos ingresos, gastos, deudas y categorías. Lo real queda en blanco para que lo vayas marcando.` : 'Armamos tu presupuesto con categorías comunes; solo pones tus montos.'}>
       ${prev && html`<button class="btn primary" onClick=${() => { copyMonthFrom(monthKey, prev); ui.toast(`Presupuesto copiado de ${monthName(prev)}`); }}>Copiar de ${monthName(prev)}</button>`}
-      <button class="btn secondary" onClick=${() => { startBlankMonth(monthKey); go(`mes/${monthKey}/presupuesto`); }}>Empezar en blanco</button>
+      ${!prev && html`<button class="btn primary" onClick=${() => { startTemplateMonth(monthKey); go(`mes/${monthKey}/presupuesto`); }}>Empezar</button>`}
     <//>
   </div>`;
 }

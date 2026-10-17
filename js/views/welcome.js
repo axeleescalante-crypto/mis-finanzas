@@ -97,9 +97,8 @@ function Setup({ onBack }) {
     </label>
     ${err && html`<p class="error">${err}</p>`}
     <div class="stack" style="margin-top:16px">
-      <button class="btn primary" onClick=${() => start('plantilla')}>Usar plantilla sugerida</button>
-      <p class="card-note" style="margin:-2px 4px 2px;text-align:center">Trae categorías comunes (alquiler, supermercado, transporte…) para que solo pongas los montos de ${MONTHS[new Date().getMonth()].toLowerCase()}.</p>
-      <button class="btn secondary" onClick=${() => start('blanco')}>Empezar en blanco</button>
+      <button class="btn primary" onClick=${() => start('plantilla')}>Empezar</button>
+      <p class="card-note" style="margin:-2px 4px 2px;text-align:center">Armamos tu presupuesto de ${MONTHS[new Date().getMonth()].toLowerCase()} con categorías comunes (alquiler, supermercado, transporte…). Solo pones tus montos y puedes agregar, cambiar o quitar lo que quieras.</p>
     </div>
     <button class="welcome-back" onClick=${onBack}>Atrás</button>
   </div>`;
