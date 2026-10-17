@@ -34,10 +34,11 @@ function useServiceWorker() {
       }
     });
     navigator.serviceWorker
-      .register('./sw.js')
+      .register('./sw.js', { updateViaCache: 'none' })
       .then((reg) => {
         const check = () => reg.waiting && navigator.serviceWorker.controller && setWaiting(reg.waiting);
         check();
+        reg.update().catch(() => {});
         reg.addEventListener('updatefound', () => {
           const sw = reg.installing;
           sw?.addEventListener('statechange', () => sw.state === 'installed' && check());

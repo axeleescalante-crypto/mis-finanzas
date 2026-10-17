@@ -1,6 +1,6 @@
 // Guarda la app en el teléfono para que abra al instante y funcione sin internet.
 // Cambia CACHE (y VERSION en js/version.js) cada vez que publiques cambios.
-const CACHE = 'mis-finanzas-1.2.0';
+const CACHE = 'mis-finanzas-1.2.1';
 const ASSETS = [
   './',
   './index.html',
@@ -32,8 +32,9 @@ const ASSETS = [
   './icons/icon-maskable-512.png',
 ];
 
+// La versión nueva se activa sola (en iPhone el aviso de actualizar no siempre aparece).
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS.map((a) => new Request(a, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
