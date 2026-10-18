@@ -34,6 +34,12 @@ El `.gitignore` bloquea archivos `.xlsx` y `.json` para no subir datos personale
 
 Los datos de Safari y los de la app instalada están separados en iOS, así que úsala desde el ícono.
 
+## Instalar en Android
+
+1. Abre la dirección de la app en **Chrome**.
+2. Toca **Instalar** en el aviso de la app, o menú **⋮** → **Instalar app**.
+3. Queda en el cajón de apps como **Finanzas**.
+
 ## Publicar con GitHub Pages
 
 En el repositorio: **Settings → Pages → Build and deployment → Source: Deploy from a branch**, rama `main`, carpeta `/ (root)`. La app queda en `https://<usuario>.github.io/mis-finanzas/`.

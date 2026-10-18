@@ -144,7 +144,7 @@ export function SheetHead({ title, onCancel = ui.close, cancelLabel = 'Cancelar'
   </div>`;
 }
 
-// Mantiene las hojas modales por encima del teclado del iPhone.
+// Mantiene las hojas modales por encima del teclado del teléfono.
 export function watchKeyboard() {
   const vv = window.visualViewport;
   if (!vv) return;
@@ -215,3 +215,54 @@ export function pickFile(accept) {
 }
 
 export const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+
+export const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// Android/Chrome: guarda el aviso de instalación para mostrar nuestro propio botón.
+let installPrompt = null;
+const installListeners = new Set();
+const emitInstall = () => installListeners.forEach((fn) => fn());
+addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  emitInstall();
+});
+addEventListener('appinstalled', () => {
+  installPrompt = null;
+  emitInstall();
+});
+
+// Devuelve una función para instalar con un toque, o null si el navegador no lo permite.
+export function useInstall() {
+  useForceUpdate((fn) => {
+    installListeners.add(fn);
+    return () => installListeners.delete(fn);
+  });
+  if (!installPrompt) return null;
+  return async () => {
+    const p = installPrompt;
+    p.prompt();
+    await p.userChoice.catch(() => {});
+    installPrompt = null;
+    emitInstall();
+  };
+}
+
+export function InstallSteps() {
+  const install = useInstall();
+  if (install) return html`<button class="btn primary" onClick=${install}><${Icon} name="download" size=${20} />Instalar app</button>`;
+  if (isIOS()) {
+    return html`<ol class="steps">
+      <li>Abre esta página en <b>Safari</b>.</li>
+      <li>Toca <b>Compartir</b> (el cuadrito con la flecha hacia arriba).</li>
+      <li>Elige <b>Agregar a pantalla de inicio</b> y toca <b>Agregar</b>.</li>
+      <li>Abre la app desde el ícono <b>Finanzas</b>.</li>
+    </ol>`;
+  }
+  return html`<ol class="steps">
+    <li>Abre esta página en <b>Chrome</b>.</li>
+    <li>Toca el menú <b>⋮</b> (arriba a la derecha).</li>
+    <li>Elige <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.</li>
+    <li>Abre la app desde el ícono <b>Finanzas</b>.</li>
+  </ol>`;
+}

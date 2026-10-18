@@ -67,7 +67,7 @@ function App() {
 
   return html`<div class="app">
     <main class="screen">
-      ${saveError && html`<div class="notice" style="margin-bottom:12px; color: var(--bad)">No se pudieron guardar los últimos cambios (el iPhone no tiene espacio para esta app). Guarda un respaldo.</div>`}
+      ${saveError && html`<div class="notice" style="margin-bottom:12px; color: var(--bad)">No se pudieron guardar los últimos cambios (el teléfono no tiene espacio para esta app). Guarda un respaldo.</div>`}
       ${view}
     </main>
     ${waiting &&

@@ -1,5 +1,5 @@
 import { html } from '../../vendor/preact-htm.js';
-import { useStore, ui, Icon, isStandalone } from '../components.js';
+import { useStore, ui, Icon, isStandalone, InstallSteps } from '../components.js';
 import { setPayday, resetAll, setCurrencyCode } from '../store.js';
 import { exportExcel, saveBackup, restoreBackup } from '../actions.js';
 import { fmtDate, CURRENCIES } from '../format.js';
@@ -28,7 +28,7 @@ export function SettingsView() {
       <${ActionRow} icon="share" title="Guardar respaldo" meta=${last ? `Último respaldo: ${fmtDate(last.slice(0, 10))}` : 'Aún no tienes un respaldo'} onClick=${saveBackup} />
       <${ActionRow} icon="upload" title="Restaurar respaldo" meta="Reemplaza tus datos con un respaldo .json" onClick=${restoreBackup} />
     </div>
-    <p class="card-note" style="margin: 0 4px">Tus datos se guardan solo en este iPhone; no se envían a ningún servidor. Guarda un respaldo en Archivos o iCloud Drive de vez en cuando.</p>
+    <p class="card-note" style="margin: 0 4px">Tus datos se guardan solo en este teléfono; no se envían a ningún servidor. Guarda un respaldo en Archivos, iCloud Drive o Google Drive de vez en cuando.</p>
 
     <h2 class="subtitle">Preferencias</h2>
     <div class="card flush">
@@ -52,22 +52,17 @@ export function SettingsView() {
     </div>
 
     ${!isStandalone() &&
-    html`<h2 class="subtitle">Instalar en tu iPhone</h2>
+    html`<h2 class="subtitle">Instalar en tu teléfono</h2>
       <div class="card">
-        <ol class="steps">
-          <li>Abre esta página en <b>Safari</b>.</li>
-          <li>Toca el botón <b>Compartir</b> (el cuadrito con la flecha hacia arriba).</li>
-          <li>Elige <b>Agregar a pantalla de inicio</b> y toca <b>Agregar</b>.</li>
-          <li>Abre la app desde el ícono <b>Finanzas</b> en tu pantalla de inicio.</li>
-        </ol>
-        <p class="card-note">Los datos que guardes en Safari y en la app instalada son distintos: empieza a usarla desde el ícono.</p>
+        <${InstallSteps} />
+        <p class="card-note">Los datos que guardes en el navegador y en la app instalada pueden ser distintos: empieza a usarla desde el ícono.</p>
       </div>`}
 
     ${hasData &&
     html`<div class="btn-row" style="margin-top:32px">
       <button class="btn danger" onClick=${() => ui.open('confirm', {
         title: 'Borrar todo',
-        message: 'Se borrarán todos tus meses, gastos y deudas de este iPhone. Si no tienes un respaldo, no se pueden recuperar.',
+        message: 'Se borrarán todos tus meses, gastos y deudas de este teléfono. Si no tienes un respaldo, no se pueden recuperar.',
         confirmLabel: 'Borrar todo',
         onConfirm: () => { resetAll(); ui.toast('Datos borrados'); },
       })}>Borrar todos los datos</button>

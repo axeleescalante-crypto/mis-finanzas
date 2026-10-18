@@ -1,2 +1,2 @@
 // Cambia este número junto con CACHE en sw.js cada vez que publiques cambios.
-export const VERSION = '1.4.0';
+export const VERSION = '1.5.0';

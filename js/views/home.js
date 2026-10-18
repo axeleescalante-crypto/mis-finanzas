@@ -1,5 +1,5 @@
 import { html } from '../../vendor/preact-htm.js';
-import { useStore, ui, go, Icon, Dot, Meter, Money } from '../components.js';
+import { useStore, ui, go, Icon, Dot, Meter, Money, useInstall, isStandalone, isIOS } from '../components.js';
 import { SECTIONS, summary, isMonthEmpty, paydayInfo } from '../calc.js';
 import { markIncomeReceived } from '../store.js';
 import { fmt, MONTHS, MONTHS_SHORT, currentKey, monthName } from '../format.js';
@@ -26,6 +26,7 @@ export function Home() {
     </div>
     <span class="chip"><${Icon} name="calendar" size=${16} />${paydayText(pay.days, pay.date)}</span>
     ${empty ? html`<${EmptyMonth} monthKey=${key} />` : html`<${MonthOverview} m=${m} monthKey=${key} pay=${pay} />`}
+    <${InstallBanner} />
     <${BackupReminder} />
     <button class="fab" onClick=${() => ui.open('tx', { monthKey: key })}><${Icon} name="plus" size=${22} stroke=${2.2} />Gasto</button>
   </div>`;
@@ -92,6 +93,17 @@ function MonthOverview({ m, monthKey, pay }) {
   `;
 }
 
+// Si la usan desde el navegador, invita a instalarla como app.
+function InstallBanner() {
+  const install = useInstall();
+  if (isStandalone()) return null;
+  return html`<div class="notice" style="margin-top:16px">
+    <${Icon} name="download" size=${20} />
+    <div class="grow">${install ? 'Instala Finanzas como app en tu teléfono.' : isIOS() ? 'Agrégala a tu pantalla de inicio: Compartir → Agregar a pantalla de inicio.' : 'Instálala: menú ⋮ de Chrome → Instalar app.'}</div>
+    ${install && html`<button class="btn small primary" onClick=${install}>Instalar</button>`}
+  </div>`;
+}
+
 function BackupReminder() {
   const state = useStore();
   const hasData = Object.keys(state.months).length > 0;
@@ -100,7 +112,7 @@ function BackupReminder() {
   if (!hasData || (days != null && days < 30)) return null;
   return html`<div class="notice" style="margin-top:16px">
     <${Icon} name="info" size=${20} />
-    <div class="grow">${last ? `Tu último respaldo fue hace ${days} días.` : 'Aún no guardas un respaldo de tus datos.'} Tus datos viven solo en este iPhone.</div>
+    <div class="grow">${last ? `Tu último respaldo fue hace ${days} días.` : 'Aún no guardas un respaldo de tus datos.'} Tus datos viven solo en este teléfono.</div>
     <button class="btn small secondary" onClick=${() => go('ajustes')}>Respaldar</button>
   </div>`;
 }
