@@ -134,3 +134,17 @@ test('día de pago quincenal: el 15 y el último día', () => {
   const fin = paydayInfo(30, new Date(2026, 1, 20), 'quincenal');
   assert.deepEqual([fin.date.getDate(), fin.days, fin.q], [28, 8, 2]);
 });
+
+test('volver a mensual junta las dos quincenas', async () => {
+  const store = await import('../js/store.js');
+  const ls = new Map();
+  globalThis.localStorage = { getItem: (k) => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, v) };
+  store.replaceAll({ months: { '2026-10': { ingresos: [{ id: 'a', name: 'Salario', est: 1000, real: null }], ahorros: [], fijos: [{ id: 'f', name: 'Luz', est: 30, real: null }], variables: [], deudas: [], tx: [], notes: '' } } });
+  store.setPayFreq('quincenal', '2026-10');
+  assert.deepEqual(store.getState().months['2026-10'].ingresos.map((i) => [i.name, i.est, i.q]), [['Salario 1ª quincena', 500, 1], ['Salario 2ª quincena', 500, 2]]);
+  store.togglePaid('2026-10', 'ingresos', store.getState().months['2026-10'].ingresos[0].id);
+  store.setPayFreq('mensual', '2026-10');
+  const m = store.getState().months['2026-10'];
+  assert.deepEqual(m.ingresos.map((i) => [i.name, i.est, i.real, i.q]), [['Salario', 1000, 500, undefined]]);
+  assert.equal(m.fijos[0].q, undefined);
+});

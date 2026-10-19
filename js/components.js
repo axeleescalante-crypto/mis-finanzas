@@ -58,12 +58,17 @@ export function useRoute() {
   useEffect(() => {
     const on = () => {
       setRoute(read());
-      window.scrollTo(0, 0);
+      scrollToTop(false);
     };
     addEventListener('hashchange', on);
     return () => removeEventListener('hashchange', on);
   }, []);
   return route;
+}
+
+// El contenido se desplaza dentro de <main class="scroller">, no la ventana.
+export function scrollToTop(smooth = true) {
+  document.querySelector('.scroller')?.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 export const go = (path) => {

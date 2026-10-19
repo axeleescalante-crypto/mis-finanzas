@@ -216,10 +216,28 @@ export function finishOnboarding(key, { currency, payday, payFreq = 'mensual', i
   });
 }
 
+function mergeQuincenas(m) {
+  const re = /\s*[12]ª quincena$/;
+  const q1 = m.ingresos.find((it) => it.q === 1 && re.test(it.name));
+  const q2 = m.ingresos.find((it) => it.q === 2 && re.test(it.name) && it.name.replace(re, '') === q1?.name.replace(re, ''));
+  if (q1 && q2) {
+    const sum = (a, b) => (a == null && b == null ? null : round2((a || 0) + (b || 0)));
+    q1.name = q1.name.replace(re, '') || 'Salario';
+    q1.est = sum(q1.est, q2.est);
+    q1.real = sum(q1.real, q2.real);
+    m.ingresos = m.ingresos.filter((it) => it !== q2);
+  }
+  for (const k of ['ingresos', 'ahorros', 'fijos', 'deudas']) for (const it of m[k]) delete it.q;
+}
+
 // Al pasar a quincenal, el salario del mes actual se divide en dos quincenas.
 export function setPayFreq(freq, key) {
   update((d) => {
     d.settings.payFreq = freq;
+    if (freq === 'mensual') {
+      for (const [k, m] of Object.entries(d.months)) if (k >= key) mergeQuincenas(m);
+      return;
+    }
     const m = d.months[key];
     if (freq !== 'quincenal' || !m || m.ingresos.some((it) => it.q === 2)) return;
     const salary = m.ingresos[0];

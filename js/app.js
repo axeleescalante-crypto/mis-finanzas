@@ -1,5 +1,5 @@
 import { html, render, useState, useEffect } from '../vendor/preact-htm.js';
-import { useRoute, useStore, Icon, SheetHost, watchKeyboard } from './components.js';
+import { useRoute, useStore, Icon, SheetHost, watchKeyboard, scrollToTop } from './components.js';
 import { requestPersistence, getSaveError } from './store.js';
 import { MessageSheet } from './actions.js';
 import { Home } from './views/home.js';
@@ -67,10 +67,10 @@ function App() {
   const active = TABS.some((t) => t.id === name) ? name : 'inicio';
 
   return html`<div class="app">
-    <main class="screen">
+    <main class="scroller"><div class="screen">
       ${saveError && html`<div class="notice" style="margin-bottom:12px; color: var(--bad)">No se pudieron guardar los últimos cambios (el teléfono no tiene espacio para esta app). Guarda un respaldo.</div>`}
       ${view}
-    </main>
+    </div></main>
     ${waiting &&
     html`<div class="update-bar" role="status">
       <span class="grow">Hay una versión nueva de la app.</span>
@@ -79,7 +79,7 @@ function App() {
     <nav class="tabbar" aria-label="Secciones">
       ${TABS.map(
         (t) => html`<a href=${`#/${t.id}`} class=${`tab ${active === t.id ? 'on' : ''}`} aria-current=${active === t.id ? 'page' : null}
-          onClick=${(e) => { if (active === t.id && !a) { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }}
+          onClick=${(e) => { if (active === t.id && !a) { e.preventDefault(); scrollToTop(); } }}
           style="text-decoration:none">
           <${Icon} name=${t.icon} size=${25} />
           <span>${t.label}</span>
