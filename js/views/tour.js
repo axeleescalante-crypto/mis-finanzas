@@ -19,11 +19,11 @@ function SceneHome() {
   const $ = currencySymbol();
   return html`<div class="card hero t-glow" style="--d:0.6s">
       <div class="hero-label">Sin usar</div>
-      <div class="hero-value">${$}432.73</div>
-      <div class="hero-sub">de ${$}1,572.00 que te entraron este mes</div>
+      <div class="hero-value">${$}480.00</div>
+      <div class="hero-sub">de ${$}1,300.00 que te entraron este mes</div>
       <div class="hero-split">
-        <div class="t-glow" style="--d:2.4s"><div class="stat-label">Por pagar</div><div class="stat-value">${$}357.30</div></div>
-        <div class="t-glow" style="--d:3.6s"><div class="stat-label">Te quedaría al final</div><div class="stat-value">${$}75.43</div></div>
+        <div class="t-glow" style="--d:2.4s"><div class="stat-label">Por pagar</div><div class="stat-value">${$}320.00</div></div>
+        <div class="t-glow" style="--d:3.6s"><div class="stat-label">Te quedaría al final</div><div class="stat-value">${$}160.00</div></div>
       </div>
     </div>
     <div class="card flush">
@@ -40,7 +40,7 @@ function SceneGasto() {
   const $ = currencySymbol();
   return html`<div class="t-stage-home">
       <div class="card hero"><div class="hero-label">Sin usar</div><div class="hero-value">
-        <${Swap} at=${5.2} from=${`${$}432.73`} to=${`${$}420.23`} />
+        <${Swap} at=${5.2} from=${`${$}480.00`} to=${`${$}467.50`} />
       </div></div>
       <span class="fab t-static">＋ Gasto</span>
     </div>
@@ -91,7 +91,7 @@ function SceneSueldo() {
   const $ = currencySymbol();
   return html`<div class="card hero">
     <div class="hero-label">Sin usar</div>
-    <div class="hero-value"><${Swap} at=${2.2} from=${`${$}0.00`} to=${`${$}1,458.12`} /></div>
+    <div class="hero-value"><${Swap} at=${2.2} from=${`${$}0.00`} to=${`${$}1,450.00`} /></div>
     <div class="notice t-hide" style="--d:2.2s">
       <div class="grow">Tu ingreso de <b>${$}1,300.00</b> todavía no está marcado como recibido.</div>
       <div style="display:flex;flex-direction:column;gap:6px">
@@ -100,7 +100,7 @@ function SceneSueldo() {
       </div>
     </div>
     <div class="t-reveal" style="--d:2.4s">
-      <p class="card-note pos" style="margin-top:12px">Te llegaron ${$}158.12 más de lo normal (horas extra).</p>
+      <p class="card-note pos" style="margin-top:12px">Te llegaron ${$}150.00 más de lo normal (horas extra).</p>
     </div>
     <${Finger} x=${80} y=${80} at=${1.2} />
   </div>`;
@@ -109,13 +109,13 @@ function SceneSueldo() {
 function SceneDeuda() {
   const $ = currencySymbol();
   return html`<div class="card">
-    <div class="head-row"><span class="strong" style="font-size:17px">Carro</span><span class="small muted num">Cuota ${$}125.00</span></div>
-    <div class="stat-value" style="margin-top:8px">Te faltan ${$}2,500.00</div>
-    <div class="meter" style="--c: var(--c-deudas)"><span class="t-grow" style="--w:17%;--d:1s"></span></div>
-    <div class="small muted" style="margin-top:6px">Pagado ${$}500.00 de ${$}3,000.00 · unos 20 meses más</div>
+    <div class="head-row"><span class="strong" style="font-size:17px">Carro</span><span class="small muted num">Cuota ${$}150.00</span></div>
+    <div class="stat-value" style="margin-top:8px">Te faltan ${$}2,400.00</div>
+    <div class="meter" style="--c: var(--c-deudas)"><span class="t-grow" style="--w:20%;--d:1s"></span></div>
+    <div class="small muted" style="margin-top:6px">Pagado ${$}600.00 de ${$}3,000.00 · unos 16 meses más</div>
   </div>
   <div class="card t-glow" style="--d:2.6s">
-    <div class="head-row"><span class="strong" style="font-size:17px">Préstamo</span><span class="small muted num">Cuota ${$}232.30</span></div>
+    <div class="head-row"><span class="strong" style="font-size:17px">Préstamo</span><span class="small muted num">Cuota ${$}200.00</span></div>
     <div class="small muted" style="margin-top:6px">Toca la deuda y escribe cuánto debes para ver cuánto te falta.</div>
   </div>
   <${Finger} x=${50} y=${33} at=${3.2} />`;
