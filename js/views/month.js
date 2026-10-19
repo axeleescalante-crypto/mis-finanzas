@@ -142,12 +142,14 @@ function ItemRow({ it, sec, monthKey }) {
     <button class="grow" style="display:flex;align-items:center;gap:12px;text-align:left;min-width:0" onClick=${() => ui.open('item', { monthKey, section: sec.key, item: it })}>
       <div class="grow">
         <div class="name">${it.name}</div>
-        <div class="meta">${quincenal ? `${it.q || 1}ª quincena · ` : ''}Planeado ${fmt(it.est)}${note ? ' · ' : ''}${note}</div>
+        <div class="meta">${quincenal ? `${it.q || 1}ª quincena · ` : ''}${it.est ? `Planeado ${fmt(it.est)}` : 'Sin monto planeado'}${note ? ' · ' : ''}${note}</div>
       </div>
-      <div class="end">
-        <div class="amount">${paid ? fmt(it.real) : '—'}</div>
-        <div class="meta">${paid ? sec.paidLabel : 'Pendiente'}</div>
-      </div>
+      ${paid
+        ? html`<div class="end">
+            <div class="amount edit-amount">${fmt(it.real)}<${Icon} name="pencil" size=${15} /></div>
+            <div class="meta">${sec.paidLabel}</div>
+          </div>`
+        : html`<span class="edit-pill"><${Icon} name="pencil" size=${15} />${it.est ? 'Anotar' : 'Poner monto'}</span>`}
     </button>
   </div>`;
 }
@@ -158,7 +160,7 @@ function VarRow({ it, monthKey }) {
     <div class="grow">
       <div class="head-row">
         <span class="name">${it.name}</span>
-        <span class="small num"><span class="strong">${fmt(it.real)}</span> <span class="muted">de ${fmt(it.est)}</span></span>
+        <span class="small num" style="display:inline-flex;align-items:center;gap:6px"><span><span class="strong">${fmt(it.real)}</span> <span class="muted">de ${it.est ? fmt(it.est) : '—'}</span></span><span class="muted" style="display:flex"><${Icon} name="pencil" size=${14} /></span></span>
       </div>
       <${Meter} k="variables" value=${it.real} max=${it.est || 0} />
       ${it.extra && html`<div class="meta" style="margin-top:4px">Sin presupuesto · toca para agregarla</div>`}
