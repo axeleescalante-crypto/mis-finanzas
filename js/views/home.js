@@ -67,6 +67,8 @@ function QuincenaCard({ m, monthKey, pay }) {
 
 function MonthOverview({ m, monthKey, pay, quincenal }) {
   const s = summary(m);
+  // Negativo solo porque falta un ingreso que lo cubre: no es una alerta.
+  const waiting = s.sinUsar.real < -0.004 && s.ingresoPendiente > 0 && s.sinUsar.real + s.ingresoPendiente >= -0.004;
   const pendingIncome = m.ingresos.find((it) => it.real == null);
   const recent = sortTx(m.tx).slice(0, 5);
   const perDay = !quincenal && s.teQuedaria > 0 && pay.days > 0 && pay.date.getMonth() === new Date().getMonth() ? s.teQuedaria / pay.days : null;
@@ -74,8 +76,10 @@ function MonthOverview({ m, monthKey, pay, quincenal }) {
   return html`
     <div class="card hero">
       <div class="hero-label">${quincenal ? 'Todo el mes · sin usar' : 'Sin usar'}</div>
-      <div class=${`hero-value ${s.sinUsar.real < -0.004 ? 'neg' : ''}`}>${fmt(s.sinUsar.real)}</div>
+      <div class=${`hero-value ${s.sinUsar.real < -0.004 && !waiting ? 'neg' : ''}`}>${fmt(s.sinUsar.real)}</div>
       <div class="hero-sub">${s.ingresos.real > 0 ? `de ${fmt(s.ingresos.real)} que te entraron este mes` : 'Todavía no registras ingresos este mes'}</div>
+      ${waiting &&
+      html`<p class="card-note" style="margin-top:8px">Sale en negativo porque ya pagaste cosas del mes y todavía te falta recibir ${fmt(s.ingresoPendiente)}${quincenal ? ' (tu otra quincena)' : ''}. Cuando lo marques como recibido, te quedarán ${fmt(s.sinUsar.real + s.ingresoPendiente)}.</p>`}
       ${!quincenal && s.ingresoPendiente > 0 &&
       html`<div class="notice">
         <div class="grow">Tu ingreso de <b>${fmt(s.ingresoPendiente)}</b> todavía no está marcado como recibido.</div>
