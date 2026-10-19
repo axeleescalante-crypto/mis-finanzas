@@ -9,7 +9,7 @@ const listeners = new Set();
 let saveError = null;
 
 function initial() {
-  return { version: 1, settings: { payday: 30, currency: 'USD' }, months: {}, debts: [], meta: { lastBackup: null, onboarded: false } };
+  return { version: 1, settings: { payday: 30, currency: 'USD', payFreq: 'mensual' }, months: {}, debts: [], meta: { lastBackup: null, onboarded: false } };
 }
 
 const numOrNull = (v) => (typeof v === 'number' && Number.isFinite(v) ? round2(v) : null);
@@ -19,7 +19,11 @@ function sanitizeMonth(m) {
   const out = emptyMonth();
   const list = (v) => (Array.isArray(v) ? v.filter((x) => x && typeof x === 'object') : []);
   for (const k of ['ingresos', 'ahorros', 'fijos', 'deudas']) {
-    out[k] = list(m?.[k]).map((it) => ({ id: str(it.id) || uid(), name: str(it.name), est: numOrNull(it.est), real: numOrNull(it.real) }));
+    out[k] = list(m?.[k]).map((it) => {
+      const o = { id: str(it.id) || uid(), name: str(it.name), est: numOrNull(it.est), real: numOrNull(it.real) };
+      if (it.q === 1 || it.q === 2) o.q = it.q;
+      return o;
+    });
   }
   out.variables = list(m?.variables).map((it) => ({ id: str(it.id) || uid(), name: str(it.name), est: numOrNull(it.est) }));
   out.tx = list(m?.tx).map((t) => ({
@@ -40,6 +44,7 @@ export function sanitize(raw) {
   const p = raw.settings?.payday;
   if (Number.isInteger(p) && p >= 1 && p <= 31) s.settings.payday = p;
   if (CURRENCIES[raw.settings?.currency]) s.settings.currency = raw.settings.currency;
+  if (raw.settings?.payFreq === 'quincenal') s.settings.payFreq = 'quincenal';
   if (raw.months && typeof raw.months === 'object') {
     for (const [k, m] of Object.entries(raw.months)) if (KEY_RE.test(k)) s.months[k] = sanitizeMonth(m);
   }
@@ -120,8 +125,13 @@ export function saveItem(key, section, item) {
         if (norm(existing.name) !== norm(name)) for (const t of m.tx) if (norm(t.cat) === norm(existing.name)) t.cat = name;
         Object.assign(existing, { name, est: item.est });
       } else list.push({ id: uid(), name, est: item.est });
-    } else if (existing) Object.assign(existing, { name, est: item.est, real: item.real });
-    else list.push({ id: uid(), name, est: item.est, real: item.real ?? null });
+    } else {
+      const target = existing || { id: uid() };
+      Object.assign(target, { name, est: item.est, real: item.real ?? null });
+      if (item.q) target.q = item.q;
+      else delete target.q;
+      if (!existing) list.push(target);
+    }
   });
 }
 
@@ -139,9 +149,9 @@ export function togglePaid(key, section, id) {
   });
 }
 
-export function markIncomeReceived(key) {
+export function markIncomeReceived(key, q = null) {
   update((d) => {
-    for (const it of d.months[key]?.ingresos || []) if (it.real == null) it.real = it.est || 0;
+    for (const it of d.months[key]?.ingresos || []) if (it.real == null && (!q || (it.q || 1) === q)) it.real = it.est || 0;
   });
 }
 
@@ -190,18 +200,38 @@ export function copyMonthFrom(key, fromKey) {
 
 export function startTemplateMonth(key) {
   update((d) => {
-    d.months[key] = templateMonth();
+    d.months[key] = templateMonth(null, d.settings.payFreq);
     d.meta.onboarded = true;
   });
 }
 
 // Primera vez: guarda moneda, día de pago y crea el mes con la plantilla.
-export function finishOnboarding(key, { currency, payday, income, template }) {
+export function finishOnboarding(key, { currency, payday, payFreq = 'mensual', income, template }) {
   update((d) => {
     d.settings.currency = currency;
     d.settings.payday = payday;
+    d.settings.payFreq = payFreq;
     d.meta.onboarded = true;
-    if (template === 'plantilla') d.months[key] = templateMonth(income);
+    if (template === 'plantilla') d.months[key] = templateMonth(income, payFreq);
+  });
+}
+
+// Al pasar a quincenal, el salario del mes actual se divide en dos quincenas.
+export function setPayFreq(freq, key) {
+  update((d) => {
+    d.settings.payFreq = freq;
+    const m = d.months[key];
+    if (freq !== 'quincenal' || !m || m.ingresos.some((it) => it.q === 2)) return;
+    const salary = m.ingresos[0];
+    if (!salary) {
+      m.ingresos = [1, 2].map((q) => ({ id: uid(), name: `Salario ${q}ª quincena`, est: null, real: null, q }));
+      return;
+    }
+    const half = salary.est != null ? round2(salary.est / 2) : null;
+    const base = salary.name.trim() || 'Salario';
+    Object.assign(salary, { name: `${base} 1ª quincena`, est: half, q: 1 });
+    if (salary.real != null) salary.real = round2(salary.real / 2);
+    m.ingresos.splice(1, 0, { id: uid(), name: `${base} 2ª quincena`, est: half, real: null, q: 2 });
   });
 }
 

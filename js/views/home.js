@@ -1,14 +1,15 @@
 import { html } from '../../vendor/preact-htm.js';
 import { useStore, ui, go, Icon, Dot, Meter, Money, useInstall, isStandalone, isIOS } from '../components.js';
-import { SECTIONS, summary, isMonthEmpty, paydayInfo } from '../calc.js';
+import { SECTIONS, summary, isMonthEmpty, paydayInfo, quincenaSummary } from '../calc.js';
 import { markIncomeReceived } from '../store.js';
 import { fmt, MONTHS, MONTHS_SHORT, currentKey, monthName } from '../format.js';
 import { EmptyMonth, TxRow, sortTx } from './common.js';
 
-function paydayText(days, date) {
-  if (days === 0) return '¡Hoy es día de pago!';
-  if (days === 1) return 'Mañana es día de pago';
-  return `Faltan ${days} días para tu pago (${date.getDate()} ${MONTHS_SHORT[date.getMonth()]})`;
+function paydayText(days, date, q) {
+  const which = q ? ` de la ${q}ª quincena` : '';
+  if (days === 0) return `¡Hoy es día de pago${which}!`;
+  if (days === 1) return `Mañana te pagan${which}`;
+  return `Faltan ${days} días para tu pago${which} (${date.getDate()} ${MONTHS_SHORT[date.getMonth()]})`;
 }
 
 export function Home() {
@@ -16,7 +17,8 @@ export function Home() {
   const key = currentKey();
   const m = state.months[key];
   const today = new Date();
-  const pay = paydayInfo(state.settings.payday, today);
+  const quincenal = state.settings.payFreq === 'quincenal';
+  const pay = paydayInfo(state.settings.payday, today, state.settings.payFreq);
   const empty = isMonthEmpty(m);
 
   return html`<div>
@@ -24,8 +26,8 @@ export function Home() {
     <div class="head-row">
       <h1 class="title">${monthName(key)}</h1>
     </div>
-    <span class="chip"><${Icon} name="calendar" size=${16} />${paydayText(pay.days, pay.date)}</span>
-    ${empty ? html`<${EmptyMonth} monthKey=${key} />` : html`<${MonthOverview} m=${m} monthKey=${key} pay=${pay} />`}
+    <span class="chip"><${Icon} name="calendar" size=${16} />${paydayText(pay.days, pay.date, quincenal ? pay.q : null)}</span>
+    ${empty ? html`<${EmptyMonth} monthKey=${key} />` : html`${quincenal && html`<${QuincenaCard} m=${m} monthKey=${key} pay=${pay} />`}<${MonthOverview} m=${m} monthKey=${key} pay=${pay} quincenal=${quincenal} />`}
     <${TourCard} />
     <${InstallBanner} />
     <${BackupReminder} />
@@ -33,18 +35,48 @@ export function Home() {
   </div>`;
 }
 
-function MonthOverview({ m, monthKey, pay }) {
+// Cuentas de la quincena actual: lo que llega, lo que toca pagar y lo gastado.
+function QuincenaCard({ m, monthKey, pay }) {
+  const qs = quincenaSummary(m, monthKey, pay.q);
+  const income = m.ingresos.find((it) => (it.q || 1) === pay.q && it.real == null);
+  const pending = qs.pagos.filter((it) => it.real == null && it.est);
+  const month = MONTHS_SHORT[pay.date.getMonth()];
+  const perDay = qs.teQuedaria > 0 && pay.days > 0 ? qs.teQuedaria / pay.days : null;
+  return html`<div class="card hero">
+    <div class="hero-label">${pay.q}ª quincena · del ${qs.from} al ${qs.to} ${month}</div>
+    <div class=${`hero-value ${qs.teQuedaria < -0.004 ? 'neg' : ''}`}>${fmt(qs.teQuedaria)}</div>
+    <div class="hero-sub">te quedaría hasta tu próximo pago</div>
+    ${income &&
+    html`<div class="notice">
+      <div class="grow">Tu pago de esta quincena (<b>${fmt(income.est)}</b>) todavía no está marcado como recibido.</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn small primary" onClick=${() => markIncomeReceived(monthKey, pay.q)}>Recibido</button>
+        <button class="btn small secondary" style="background:var(--card)" onClick=${() => ui.open('item', { monthKey, section: 'ingresos', item: income })}>Otro monto</button>
+      </div>
+    </div>`}
+    <div class="q-lines">
+      <div><span>Te llega</span><b>${fmt(qs.ingreso + qs.ingresoPendiente)}</b></div>
+      <div><span>Pagos de esta quincena</span><b>−${fmt(qs.pagado + qs.porPagar)}</b></div>
+      <div><span>Gastos del ${qs.from} al ${qs.to}</span><b>−${fmt(qs.gastos)}</b></div>
+    </div>
+    ${pending.length > 0 &&
+    html`<div class="small muted" style="margin-top:10px">Te falta pagar: ${pending.map((it) => `${it.name} (${fmt(it.est)})`).join(', ')}</div>`}
+    ${perDay != null && html`<div class="hint">≈ ${fmt(perDay)} por día hasta el ${pay.date.getDate()}</div>`}
+  </div>`;
+}
+
+function MonthOverview({ m, monthKey, pay, quincenal }) {
   const s = summary(m);
   const pendingIncome = m.ingresos.find((it) => it.real == null);
   const recent = sortTx(m.tx).slice(0, 5);
-  const perDay = s.teQuedaria > 0 && pay.days > 0 && pay.date.getMonth() === new Date().getMonth() ? s.teQuedaria / pay.days : null;
+  const perDay = !quincenal && s.teQuedaria > 0 && pay.days > 0 && pay.date.getMonth() === new Date().getMonth() ? s.teQuedaria / pay.days : null;
 
   return html`
     <div class="card hero">
-      <div class="hero-label">Sin usar</div>
+      <div class="hero-label">${quincenal ? 'Todo el mes · sin usar' : 'Sin usar'}</div>
       <div class=${`hero-value ${s.sinUsar.real < -0.004 ? 'neg' : ''}`}>${fmt(s.sinUsar.real)}</div>
       <div class="hero-sub">${s.ingresos.real > 0 ? `de ${fmt(s.ingresos.real)} que te entraron este mes` : 'Todavía no registras ingresos este mes'}</div>
-      ${s.ingresoPendiente > 0 &&
+      ${!quincenal && s.ingresoPendiente > 0 &&
       html`<div class="notice">
         <div class="grow">Tu ingreso de <b>${fmt(s.ingresoPendiente)}</b> todavía no está marcado como recibido.</div>
         <div style="display:flex;flex-direction:column;gap:6px">

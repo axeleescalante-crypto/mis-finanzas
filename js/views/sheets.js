@@ -99,6 +99,9 @@ export function ItemSheet({ monthKey, section, item }) {
   const [done, setDone] = useState(!isVar && item?.real != null);
   const [real, setReal] = useState(isVar ? '' : amountInput(item?.real));
   const [err, setErr] = useState('');
+  const state = useStore();
+  const quincenal = state.settings.payFreq === 'quincenal' && !isVar;
+  const [q, setQ] = useState(item?.q || 1);
 
   const markDone = (v) => {
     setDone(v);
@@ -110,7 +113,7 @@ export function ItemSheet({ monthKey, section, item }) {
     const r = done && real.trim() ? parseAmount(real) : null;
     if ((est.trim() && e == null) || (done && real.trim() && r == null)) return setErr('Revisa las cantidades: solo números.');
     if (done && r == null) return setErr(`Escribe ${t.amount.toLowerCase().replace('¿', '').replace('?', '')}.`);
-    saveItem(monthKey, section, { id: editing ? item.id : null, name, est: e, real: done ? r : null });
+    saveItem(monthKey, section, { id: editing ? item.id : null, name, est: e, real: done ? r : null, q: quincenal ? q : item?.q });
     ui.close();
   };
   const remove = () => {
@@ -128,6 +131,14 @@ export function ItemSheet({ monthKey, section, item }) {
     </label>
     <${MoneyInput} label=${t.plan} value=${est} onInput=${setEst} />
     ${t.planNote && html`<p class="card-note" style="margin: -2px 4px 8px">${t.planNote}</p>`}
+    ${quincenal &&
+    html`<div class="field">
+      <span>${isIncome ? '¿En qué quincena te llega?' : '¿Con qué quincena lo pagas?'}</span>
+      <div class="seg" style="margin:6px 0 2px">
+        <button class=${q === 1 ? 'on' : ''} onClick=${() => setQ(1)}>1ª (del 1 al 15)</button>
+        <button class=${q === 2 ? 'on' : ''} onClick=${() => setQ(2)}>2ª (del 16 al fin)</button>
+      </div>
+    </div>`}
     ${!isVar &&
     html`<div class="field">
         <span>${t.ask}</span>

@@ -130,6 +130,7 @@ function Budget({ m, monthKey }) {
 }
 
 function ItemRow({ it, sec, monthKey }) {
+  const quincenal = useStore().settings.payFreq === 'quincenal';
   const paid = it.real != null;
   const note = diffNote(sec, it);
   return html`<div class="row tap" style="padding-left:12px">
@@ -141,7 +142,7 @@ function ItemRow({ it, sec, monthKey }) {
     <button class="grow" style="display:flex;align-items:center;gap:12px;text-align:left;min-width:0" onClick=${() => ui.open('item', { monthKey, section: sec.key, item: it })}>
       <div class="grow">
         <div class="name">${it.name}</div>
-        <div class="meta">Planeado ${fmt(it.est)}${note ? ' · ' : ''}${note}</div>
+        <div class="meta">${quincenal ? `${it.q || 1}ª quincena · ` : ''}Planeado ${fmt(it.est)}${note ? ' · ' : ''}${note}</div>
       </div>
       <div class="end">
         <div class="amount">${paid ? fmt(it.real) : '—'}</div>

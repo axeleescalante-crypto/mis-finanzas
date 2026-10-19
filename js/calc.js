@@ -99,7 +99,12 @@ export function hasMoney(m) {
 export function copyBudget(from) {
   const m = emptyMonth();
   for (const s of SECTIONS) {
-    m[s.key] = from[s.key].map((it) => (s.auto ? { id: uid(), name: it.name, est: it.est ?? null } : { id: uid(), name: it.name, est: it.est ?? null, real: null }));
+    m[s.key] = from[s.key].map((it) => {
+      if (s.auto) return { id: uid(), name: it.name, est: it.est ?? null };
+      const copy = { id: uid(), name: it.name, est: it.est ?? null, real: null };
+      if (it.q) copy.q = it.q;
+      return copy;
+    });
   }
   return m;
 }
@@ -113,13 +118,61 @@ export const TEMPLATE = {
   deudas: [],
 };
 
-export function templateMonth(income = null) {
+// En quincenal, el salario va en dos renglones (uno por quincena) y lo demás se paga con la 1ª.
+export function templateMonth(income = null, freq = 'mensual') {
   const m = emptyMonth();
   for (const [k, names] of Object.entries(TEMPLATE)) {
     m[k] = names.map((name) => (k === 'variables' ? { id: uid(), name, est: null } : { id: uid(), name, est: null, real: null }));
   }
-  m.ingresos[0].est = income;
+  if (freq === 'quincenal') {
+    m.ingresos = [1, 2].map((q) => ({ id: uid(), name: `Salario ${q}ª quincena`, est: income, real: null, q }));
+    for (const k of ['ahorros', 'fijos', 'deudas']) for (const it of m[k]) it.q = 1;
+  } else m.ingresos[0].est = income;
   return m;
+}
+
+// --- Quincenas -----------------------------------------------------------------
+
+export const quincenaOfDay = (day) => (day <= 15 ? 1 : 2);
+const qOf = (it) => it.q || 1;
+
+// Cuentas de una quincena: lo que llega, lo que toca pagar y lo gastado en esas fechas.
+export function quincenaSummary(m, key, q) {
+  const [y, mm] = key.split('-').map(Number);
+  const last = new Date(y, mm, 0).getDate();
+  const from = q === 1 ? 1 : 16;
+  const to = q === 1 ? 15 : last;
+  let ingreso = 0;
+  let ingresoPendiente = 0;
+  for (const it of m.ingresos) {
+    if (qOf(it) !== q) continue;
+    if (it.real != null) ingreso += it.real;
+    else ingresoPendiente += it.est || 0;
+  }
+  let pagado = 0;
+  let porPagar = 0;
+  const pagos = [];
+  for (const k of ['ahorros', 'fijos', 'deudas']) {
+    for (const it of m[k]) {
+      if (qOf(it) !== q) continue;
+      if (it.real != null) pagado += it.real;
+      else porPagar += it.est || 0;
+      pagos.push({ ...it, section: k });
+    }
+  }
+  let gastos = 0;
+  for (const t of m.tx) {
+    const d = t.date && t.date.startsWith(key) ? +t.date.slice(8, 10) : null;
+    if (d != null ? quincenaOfDay(d) === q : q === 1) gastos += t.amount || 0;
+  }
+  const r = (n) => round2(n);
+  return {
+    q, from, to,
+    ingreso: r(ingreso), ingresoPendiente: r(ingresoPendiente),
+    pagado: r(pagado), porPagar: r(porPagar), gastos: r(gastos), pagos,
+    disponible: r(ingreso - pagado - gastos),
+    teQuedaria: r(ingreso + ingresoPendiente - pagado - porPagar - gastos),
+  };
 }
 
 // Mes más reciente anterior a `key` que tenga presupuesto.
@@ -206,7 +259,16 @@ export function debtsOverview(state, refKey) {
 }
 
 // Días que faltan para el pago (día `payday`, o el último día si el mes es más corto).
-export function paydayInfo(payday, today = new Date()) {
+// Próximo pago: el día `payday`, o en quincenal el 15 y el último día del mes.
+export function paydayInfo(payday, today = new Date(), freq = 'mensual') {
+  if (freq === 'quincenal') {
+    const y = today.getFullYear();
+    const m = today.getMonth();
+    const d = today.getDate();
+    const last = new Date(y, m + 1, 0).getDate();
+    const target = d <= 15 ? new Date(y, m, 15) : new Date(y, m, last);
+    return { days: Math.round((target - new Date(y, m, d)) / 86400000), date: target, q: quincenaOfDay(d) };
+  }
   const y = today.getFullYear();
   const m = today.getMonth();
   const dim = new Date(y, m + 1, 0).getDate();

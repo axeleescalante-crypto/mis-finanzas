@@ -53,12 +53,14 @@ function Setup({ onBack }) {
   const [currency, setCurrency] = useState('USD');
   const [income, setIncome] = useState('');
   const [payday, setPayday] = useState(30);
+  const [payFreq, setPayFreq] = useState('mensual');
+  const quincenal = payFreq === 'quincenal';
   const [err, setErr] = useState('');
 
   const start = (template) => {
     const n = income.trim() ? parseAmount(income) : null;
     if (income.trim() && !(n > 0)) return setErr('Revisa tu salario.');
-    finishOnboarding(currentKey(), { currency, payday, income: n, template });
+    finishOnboarding(currentKey(), { currency, payday, payFreq, income: n, template });
     if (template) location.hash = `#/mes/${currentKey()}/presupuesto`;
     setTimeout(() => ui.open('tour'), 300);
   };
@@ -72,17 +74,26 @@ function Setup({ onBack }) {
         ${Object.entries(CURRENCIES).map(([code, c]) => html`<option key=${code} value=${code}>${c.label} (${code})</option>`)}
       </select>
     </label>
+    <div class="field">
+      <span>¿Cada cuánto te pagan?</span>
+      <div class="seg" style="margin:6px 0 2px">
+        <button class=${!quincenal ? 'on' : ''} onClick=${() => setPayFreq('mensual')}>Una vez al mes</button>
+        <button class=${quincenal ? 'on' : ''} onClick=${() => setPayFreq('quincenal')}>Cada quincena</button>
+      </div>
+    </div>
     <label class="field">
-      <span>Salario líquido al mes (opcional)</span>
+      <span>${quincenal ? 'Salario líquido de cada quincena (opcional)' : 'Salario líquido al mes (opcional)'}</span>
       <div class="money-input"><b>${currencySymbol()}</b><input inputmode="decimal" placeholder="0.00" value=${income} onInput=${(e) => setIncome(e.target.value)} /></div>
     </label>
     <p class="card-note" style="margin:-2px 4px 8px">Lo que te llega ya con los descuentos de ley, sin horas extra. En tu boleta de pago aparece como «Líquido a entregar». Si un mes te llega más, lo cambias ese mes.</p>
-    <label class="field">
-      <span>¿Qué día del mes te pagan?</span>
-      <select value=${payday} onChange=${(e) => setPayday(+e.target.value)}>
-        ${Array.from({ length: 31 }, (_, i) => i + 1).map((d) => html`<option key=${d} value=${d}>${d}</option>`)}
-      </select>
-    </label>
+    ${quincenal
+      ? html`<p class="card-note" style="margin:0 4px 8px">Tus pagos llegan el 15 y el último día del mes. Verás tus cuentas de cada quincena por separado.</p>`
+      : html`<label class="field">
+          <span>¿Qué día del mes te pagan?</span>
+          <select value=${payday} onChange=${(e) => setPayday(+e.target.value)}>
+            ${Array.from({ length: 31 }, (_, i) => i + 1).map((d) => html`<option key=${d} value=${d}>${d}</option>`)}
+          </select>
+        </label>`}
     ${err && html`<p class="error">${err}</p>`}
     <div class="stack" style="margin-top:16px">
       <button class="btn primary" onClick=${() => start('plantilla')}>Empezar</button>

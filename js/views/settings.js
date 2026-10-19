@@ -1,8 +1,8 @@
 import { html } from '../../vendor/preact-htm.js';
 import { useStore, ui, Icon, isStandalone, InstallSteps } from '../components.js';
-import { setPayday, resetAll, setCurrencyCode } from '../store.js';
+import { setPayday, resetAll, setCurrencyCode, setPayFreq } from '../store.js';
 import { exportExcel, saveBackup, restoreBackup } from '../actions.js';
-import { fmtDate, CURRENCIES } from '../format.js';
+import { fmtDate, CURRENCIES, currentKey } from '../format.js';
 import { VERSION } from '../version.js';
 
 function ActionRow({ icon, title, meta, onClick }) {
@@ -32,12 +32,20 @@ export function SettingsView() {
 
     <h2 class="subtitle">Preferencias</h2>
     <div class="card flush">
-      <div class="row">
+      <label class="row">
+        <div class="grow"><div class="name">Te pagan</div><div class="meta">${state.settings.payFreq === 'quincenal' ? 'El 15 y el último día del mes' : 'Una vez al mes'}</div></div>
+        <select class="select" value=${state.settings.payFreq} aria-label="Frecuencia de pago"
+          onChange=${(e) => { setPayFreq(e.target.value, currentKey()); ui.toast(e.target.value === 'quincenal' ? 'Listo: tu salario de este mes se dividió en dos quincenas' : 'Listo: pago mensual'); }}>
+          <option value="mensual">Mensual</option>
+          <option value="quincenal">Quincenal</option>
+        </select>
+      </label>
+      ${state.settings.payFreq !== 'quincenal' && html`<div class="row">
         <div class="grow"><div class="name">Día de pago</div><div class="meta">El día del mes en que te pagan</div></div>
         <button class="icon-btn" aria-label="Un día antes" disabled=${payday <= 1} onClick=${() => setPayday(payday - 1)}><${Icon} name="left" /></button>
         <span class="strong num" style="min-width:24px;text-align:center">${payday}</span>
         <button class="icon-btn" aria-label="Un día después" disabled=${payday >= 31} onClick=${() => setPayday(payday + 1)}><${Icon} name="right" /></button>
-      </div>
+      </div>`}
       <label class="row">
         <div class="grow"><div class="name">Moneda</div><div class="meta">${CURRENCIES[state.settings.currency].label}</div></div>
         <select class="select" value=${state.settings.currency} onChange=${(e) => setCurrencyCode(e.target.value)} aria-label="Moneda">

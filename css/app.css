@@ -453,3 +453,7 @@ input[type="file"] { display: none; }
 .t-type { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; min-height: 42px; }
 @keyframes t-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .t-finger { display: none; } }
+
+.q-lines { margin-top: 14px; padding-top: 12px; border-top: 0.5px solid var(--line); }
+.q-lines div { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; padding: 3px 0; color: var(--ink-2); }
+.q-lines b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }

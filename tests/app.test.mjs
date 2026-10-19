@@ -114,3 +114,23 @@ test('monedas y montos con formato europeo', async () => {
   assert.equal(parseAmount('Q 150'), 150);
 });
 
+
+test('quincenas: cada pago cubre lo suyo', async () => {
+  const { quincenaSummary, templateMonth } = await import('../js/calc.js');
+  const t = templateMonth(500, 'quincenal');
+  assert.deepEqual(t.ingresos.map((i) => [i.est, i.q]), [[500, 1], [500, 2]]);
+  const m = emptyMonth();
+  m.ingresos = [{ id: 'a', name: 'Q1', est: 500, real: 500, q: 1 }, { id: 'b', name: 'Q2', est: 500, real: null, q: 2 }];
+  m.fijos = [{ id: 'c', name: 'Alquiler', est: 300, real: 300, q: 1 }, { id: 'd', name: 'Tarjeta', est: 120, real: null, q: 2 }, { id: 'e', name: 'Luz', est: 30, real: null }];
+  m.tx = [{ id: 't1', cat: 'Comida', amount: 40, date: '2026-10-03', note: '' }, { id: 't2', cat: 'Comida', amount: 25, date: '2026-10-20', note: '' }];
+  const q1 = quincenaSummary(m, '2026-10', 1);
+  assert.deepEqual([q1.ingreso, q1.pagado, q1.porPagar, q1.gastos, q1.teQuedaria], [500, 300, 30, 40, 130]);
+  const q2 = quincenaSummary(m, '2026-10', 2);
+  assert.deepEqual([q2.ingresoPendiente, q2.porPagar, q2.gastos, q2.teQuedaria, q2.to], [500, 120, 25, 355, 31]);
+});
+
+test('día de pago quincenal: el 15 y el último día', () => {
+  assert.equal(paydayInfo(30, new Date(2026, 9, 10), 'quincenal').date.getDate(), 15);
+  const fin = paydayInfo(30, new Date(2026, 1, 20), 'quincenal');
+  assert.deepEqual([fin.date.getDate(), fin.days, fin.q], [28, 8, 2]);
+});
