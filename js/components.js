@@ -92,6 +92,7 @@ const ICONS = {
   calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.8h17M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/>',
   info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.4"/>',
   share: '<path d="M12 3.5v11M8 7.5l4-4 4 4M7 11H6a1.5 1.5 0 0 0-1.5 1.5v6.5A1.5 1.5 0 0 0 6 20.5h12a1.5 1.5 0 0 0 1.5-1.5v-6.5A1.5 1.5 0 0 0 18 11h-1"/>',
+  play: '<circle cx="12" cy="12" r="8.5"/><path d="M10.2 8.8v6.4l5.2-3.2z" fill="currentColor"/>',
   wallet: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><path d="M15.5 12h4.5"/>',
 };
 
@@ -170,7 +171,8 @@ export function SheetHost({ registry }) {
   }, [sheet?.id]);
   const Comp = sheet && registry[sheet.type];
   return html`
-    ${Comp && html`<div class="overlay" onClick=${ui.close}></div>
+    ${Comp && Comp.bare && html`<div role="dialog" aria-modal="true" key=${sheet.id}><${Comp} ...${sheet.props} /></div>`}
+    ${Comp && !Comp.bare && html`<div class="overlay" onClick=${ui.close}></div>
       <div class="sheet" role="dialog" aria-modal="true" key=${sheet.id}><${Comp} ...${sheet.props} /></div>`}
     ${toast && html`<div class="toast" role="status" key=${toast.id}>${toast.msg}</div>`}
   `;

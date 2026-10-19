@@ -50,6 +50,7 @@ export function sanitize(raw) {
       .filter((d) => d.balance != null && d.since);
   }
   if (typeof raw.meta?.lastBackup === 'string') s.meta.lastBackup = raw.meta.lastBackup;
+  if (raw.meta?.tourSeen === true) s.meta.tourSeen = true;
   // Quien ya tenía datos no necesita la bienvenida.
   s.meta.onboarded = raw.meta?.onboarded === true || Object.keys(s.months).length > 0;
   return s;
@@ -207,6 +208,12 @@ export function finishOnboarding(key, { currency, payday, income, template }) {
 export function setCurrencyCode(code) {
   update((d) => {
     d.settings.currency = code;
+  });
+}
+
+export function setTourSeen() {
+  update((d) => {
+    d.meta.tourSeen = true;
   });
 }
 

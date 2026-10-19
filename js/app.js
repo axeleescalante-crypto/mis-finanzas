@@ -9,8 +9,9 @@ import { YearView } from './views/year.js';
 import { SettingsView } from './views/settings.js';
 import { TxSheet, ItemSheet, DebtSheet, ConfirmSheet } from './views/sheets.js';
 import { Welcome } from './views/welcome.js';
+import { Tour } from './views/tour.js';
 
-const SHEETS = { tx: TxSheet, item: ItemSheet, debt: DebtSheet, confirm: ConfirmSheet, message: MessageSheet, welcome: Welcome };
+const SHEETS = { tx: TxSheet, item: ItemSheet, debt: DebtSheet, confirm: ConfirmSheet, message: MessageSheet, welcome: Welcome, tour: Tour };
 
 const TABS = [
   { id: 'inicio', label: 'Inicio', icon: 'home' },

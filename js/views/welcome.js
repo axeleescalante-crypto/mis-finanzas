@@ -60,6 +60,7 @@ function Setup({ onBack }) {
     if (income.trim() && !(n > 0)) return setErr('Revisa tu salario.');
     finishOnboarding(currentKey(), { currency, payday, income: n, template });
     if (template) location.hash = `#/mes/${currentKey()}/presupuesto`;
+    setTimeout(() => ui.open('tour'), 300);
   };
 
   return html`<div class="welcome-slide setup">

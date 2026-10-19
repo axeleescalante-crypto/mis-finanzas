@@ -26,6 +26,7 @@ export function Home() {
     </div>
     <span class="chip"><${Icon} name="calendar" size=${16} />${paydayText(pay.days, pay.date)}</span>
     ${empty ? html`<${EmptyMonth} monthKey=${key} />` : html`<${MonthOverview} m=${m} monthKey=${key} pay=${pay} />`}
+    <${TourCard} />
     <${InstallBanner} />
     <${BackupReminder} />
     <button class="fab" onClick=${() => ui.open('tx', { monthKey: key })}><${Icon} name="plus" size=${22} stroke=${2.2} />Gasto</button>
@@ -91,6 +92,15 @@ function MonthOverview({ m, monthKey, pay }) {
         : html`<p class="card-note" style="padding: 16px; margin: 0">Todavía no registras gastos este mes. Toca «+ Gasto» cada vez que compres algo.</p>`}
     </div>
   `;
+}
+
+function TourCard() {
+  const state = useStore();
+  if (state.meta.tourSeen) return null;
+  return html`<button class="card" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-top:16px" onClick=${() => ui.open('tour')}>
+    <span style="width:44px;height:44px;border-radius:22px;display:grid;place-items:center;background:var(--btn);color:var(--on-btn);flex-shrink:0"><${Icon} name="play" size=${26} /></span>
+    <span class="grow"><span class="strong" style="display:block">Mira cómo usar la app</span><span class="small muted">Video guía de 1 minuto</span></span>
+  </button>`;
 }
 
 // Si la usan desde el navegador, invita a instalarla como app.

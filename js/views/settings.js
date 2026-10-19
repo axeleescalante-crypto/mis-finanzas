@@ -48,6 +48,7 @@ export function SettingsView() {
 
     <h2 class="subtitle">Ayuda</h2>
     <div class="card flush">
+      <${ActionRow} icon="play" title="Ver video guía" meta="Cómo usar la app, en 1 minuto" onClick=${() => ui.open('tour')} />
       <${ActionRow} icon="info" title="Ver guía de bienvenida" meta="Cómo funciona la app, en 3 pasos" onClick=${() => ui.open('welcome', { mode: 'guide' })} />
     </div>
 
